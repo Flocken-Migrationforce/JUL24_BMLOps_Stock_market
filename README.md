@@ -1,7 +1,11 @@
-Project Name
-==============================
+#💲Stock Market Prediction
 
-This project is a starting Pack for MLOps projects based on the subject "movie_recommandation". It's not perfect so feel free to make some modifications on it.
+## 🧺 Introduction and Target
+
+In this MLOps project, we are currently developing Machine Learning models to predict the evolution of shares of Apple (AAPL) and Google (GOOGL) at the stock market.
+An API will be created and deployed, to allow access to and interaction with interested parties with an affinity for finance. Daily data updates ensure the data to be up-to-date.
+
+--unspecific Template content below--
 
 Project Organization
 ------------
