@@ -1,4 +1,4 @@
-#💲Stock Market Prediction
+# 📈💲Stock Market Prediction
 
 ## 🧺 Introduction and Target
 
