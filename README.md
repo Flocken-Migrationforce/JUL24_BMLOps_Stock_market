@@ -2,13 +2,29 @@
 
 ## 🧺 Introduction and Target
 
-In this MLOps project, we are currently developing Machine Learning models to predict the evolution of shares of Apple (AAPL) and Google (GOOGL) at the stock market.
-An API will be created and deployed, to allow access to and interaction with interested parties with an affinity for finance. Daily data updates ensure the data to be up-to-date.
+In this MLOps project, we are currently developing AI/ML models to predict the evolution of shares of Apple (AAPL) and Google (GOOGL) at the stock market.
+An API will be created and deployed, to allow access to and interaction with interested parties with an affinity for finance. Daily updates ensure the data to be up-to-date.
 
 Contributors to this project :
 Mir Mehdi Seyedebrahimi https://github.com/mirmehdi
 Fabian Flocken https://github.com/Flocken-Migrationforce
 Florian Wehner
+
+
+This project aims to develop an AI/ML model to predict stock market prices and trends.
+
+## Table of Contents
+1. [Project Overview](reports/project_overview.md)
+2. [Data Collection](reports/data_collection.md)
+3. [Data Preprocessing](reports/data_preprocessing.md)
+4. [Exploratory Data Analysis](notebooks/eda.ipynb)
+5. [Model Selection](reports/model_selection.md)
+6. [Model Training](reports/model_training.md)
+7. [Model Evaluation](reports/model_evaluation.md)
+8. [Deployment](reports/deployment.md)
+9. [Monitoring and Maintenance](reports/monitoring_and_maintenance.md)
+
+
 
 --unspecific Template content below--
 
