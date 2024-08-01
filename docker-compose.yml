@@ -1,0 +1,22 @@
+version: '3'
+services:
+  webserver:
+    image: apache/airflow:2.3.0
+    command: webserver
+    ports:
+      - 8080:8080
+#     - 8074:8080  # Changed from 8080:8080 to 8074:8080
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__CORE__SQL_ALCHEMY_CONN=sqlite:////opt/airflow/airflow.db
+
+  scheduler:
+    image: apache/airflow:2.3.0
+    command: scheduler
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__CORE__SQL_ALCHEMY_CONN=sqlite:////opt/airflow/airflow.db

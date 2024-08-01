@@ -1,0 +1,17 @@
+fastapi
+uvicorn
+httpx
+sqlalchemy
+psycopg2-binary
+redis
+docker
+python-jose[cryptography]
+passlib[bcrypt]
+python-multipart
+cryptography
+dash
+plotly
+pandas
+requests
+docker
+joblib
