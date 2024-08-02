@@ -89,3 +89,7 @@ target/
 .mypy_cache/
 /notebooks/MyAPIKey.py
 /others/
+/README_MORE.txt
+/README_MORE.md
+/Structure.txt
+/app/run2.sh
