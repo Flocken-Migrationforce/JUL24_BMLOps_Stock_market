@@ -93,3 +93,5 @@ target/
 /README_MORE.md
 /Structure.txt
 /app/run2.sh
+/docker-compose2408021054PostgreSQL used, and updated Airflow from 2.3.0 to 2.9.3, maybe not good.yml
+/docker-compose_-1.yml
