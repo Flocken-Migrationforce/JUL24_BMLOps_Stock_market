@@ -19,8 +19,7 @@ users_db = {
     "admin": "admin",
     "fabian": "fabianpass",
     "mehdi": "mehdipass",
-    "leo": "leopass",
-    "florian": "florianpass"
+    "leo": "leopass"
 }
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
