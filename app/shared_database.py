@@ -1,5 +1,7 @@
 # This file contains the logic for interacting with the shared database.
-
+# Version 0.1
+# Fabian
+# 2408021049
 
 # app/database.py
 from fastapi import FastAPI, Depends
