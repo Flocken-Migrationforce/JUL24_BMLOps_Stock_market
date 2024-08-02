@@ -9,8 +9,10 @@ from fastapi import FastAPI
 airflow_app = FastAPI()
 
 AIRFLOW_API_URL = "http://localhost:8080/api/v1"
-AIRFLOW_USERNAME = "your_airflow_username"
-AIRFLOW_PASSWORD = "your_airflow_password"
+AIRFLOW_USERNAME = "airflow"
+AIRFLOW_PASSWORD = "airflow"
+# AIRFLOW_USERNAME = "your_airflow_username"
+# AIRFLOW_PASSWORD = "your_airflow_password"
 
 
 @airflow_app.post("/trigger-dag/{dag_id}")
