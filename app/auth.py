@@ -67,8 +67,15 @@ ALGORITHM = "RS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 300
 REFRESH_TOKEN_EXPIRE_DAYS = 14
 
-fake_users_db = {}
-
+fake_users_db = {
+# users_db = {
+    "admin": "admin",
+    "fabian": "fabianpass",
+    "mehdi": "mehdipass",
+    "leo": "leopass",
+    "florian": "florianpass",
+	"user": "user"
+}
 
 class Token(BaseModel):
 	access_token: str
