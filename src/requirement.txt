@@ -1,0 +1,14 @@
+fastapi
+uvicorn
+sqlalchemy
+requests
+pandas
+numpy
+matplotlib
+scikit-learn
+keras
+tensorflow
+python-dotenv
+passlib[bcrypt]
+pyjwt
+yfinance
