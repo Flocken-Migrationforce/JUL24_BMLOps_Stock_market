@@ -1,16 +1,7 @@
-'''
-scenario for the api
-1. user can register in our user_db---> post 
-    curl -X POST "http://127.0.0.1:8000/users/" -H "Content-Type: application/json" -d '{"name": "Alice", "subscription": "premium"}'
-2. user can change the membership type--> put 
-    curl -X PUT "http://127.0.0.1:8000/users/1" -H "Content-Type: application/json" -d '{"subscription": "premium"}'
-3. delet the user 
-    curl -X DELETE "http://127.0.0.1:8000/users/1"
-4. ask for the symbol to predict the model and use it. only premium users can see the prediction results
-'''
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import Optional
+from main import train_validate_predict
 
 app = FastAPI()
 
@@ -62,7 +53,7 @@ def get_users():
 @app.put("/users/{userid}")
 def update_user(userid: int, user: User):
     """
-    Update the subscription type of an existing user.
+    Update the name and subscription type of an existing user.
     
     Args:
         userid (int): The ID of the user to update.
@@ -73,6 +64,9 @@ def update_user(userid: int, user: User):
     """
     if userid not in users_db:
         raise HTTPException(status_code=404, detail="User not found")
+    
+    # Update the user with the new data
+    users_db[userid].name = user.name
     users_db[userid].subscription = user.subscription
     return users_db[userid]
 
@@ -108,7 +102,8 @@ def train_model(stock_request: StockRequest):
         raise HTTPException(status_code=400, detail="Unsupported stock symbol")
 
     try:
-        train_and_save_model(symbol)
+        # Assuming the last two parameters in `train_validate_predict` are start_date and end_date
+        predictions_val, y_val, _ = train_validate_predict(symbol=symbol)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -140,11 +135,11 @@ def predict_stock(stock_request: StockRequest):
         raise HTTPException(status_code=403, detail="Your membership is not premium. Please upgrade to access this feature.")
 
     try:
-        predictions, y_test = predict_stock_price(symbol)
+        _, _, predicted_prices = train_validate_predict(symbol=symbol)
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
     return {
         "symbol": symbol,
-        "predictions": predictions.tolist()
+        "predicted_prices": predicted_prices.tolist()
     }
