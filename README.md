@@ -76,3 +76,20 @@ Project Organization
 --------
 
 <p><small>Project based on the <a target="_blank" href="https://drivendata.github.io/cookiecutter-data-science/">cookiecutter data science project template</a>. #cookiecutterdatascience</small></p>
+
+
+# Stock Market Prediction Project
+
+This project aims to develop an AI/ML model to predict stock market prices and trends.
+
+## Table of Contents
+1. [Project Overview](reports/project_overview.md)
+2. [Data Collection](reports/data_collection.md)
+3. [Data Preprocessing](reports/data_preprocessing.md)
+4. [Exploratory Data Analysis](notebooks/eda.ipynb)
+5. [Model Selection](reports/model_selection.md)
+6. [Model Training](reports/model_training.md)
+7. [Model Evaluation](reports/model_evaluation.md)
+8. [Deployment](reports/deployment.md)
+9. [Monitoring and Maintenance](reports/monitoring_and_maintenance.md)
+
