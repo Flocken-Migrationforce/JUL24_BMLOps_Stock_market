@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import Optional
-from main import train_validate_predict
+
 
 app = FastAPI()
 
