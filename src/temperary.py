@@ -1,5 +1,4 @@
 # run_train.py
-from main import train_validate_predict
 import matplotlib.pyplot as plt 
 
 # Predict Google (GOOGL) stock prices

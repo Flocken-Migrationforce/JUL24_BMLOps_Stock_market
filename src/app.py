@@ -143,3 +143,7 @@ def predict_stock(stock_request: StockRequest):
         "symbol": symbol,
         "predicted_prices": predicted_prices.tolist()
     }
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)
