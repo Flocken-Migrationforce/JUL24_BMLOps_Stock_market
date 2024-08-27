@@ -6,9 +6,7 @@ import os
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
-from keras.models import Sequential, load_model
-from keras.layers import LSTM, Dense, Dropout
-from sklearn.metrics import mean_squared_error, mean_absolute_error
+
 from utils import get_daily_stock_prices, create_my_dataset
 
 #start 2408231528 Fabian
@@ -28,41 +26,6 @@ def prepare_datasets(scaled_data):
     x_train = np.reshape(x_train, (x_train.shape[0], x_train.shape[1], 1))
     x_val = np.reshape(x_val, (x_val.shape[0], x_val.shape[1], 1))
     return x_train, y_train, x_val, y_val
-
-def create_model():
-    model = Sequential()
-    model.add(LSTM(units=96, return_sequences=True, input_shape=(60, 1)))
-    model.add(Dropout(0.2))
-    model.add(LSTM(units=96, return_sequences=True))
-    model.add(Dropout(0.2))
-    model.add(LSTM(units=96))
-    model.add(Dropout(0.2))
-    model.add(Dense(units=1))
-    model.compile(loss='mean_squared_error', optimizer='adam')
-    return model
-
-def train_model(model, x_train, y_train):
-    model.fit(x_train, y_train, epochs=50, batch_size=32)
-
-def validate_model(model, x_val, y_val, scaler):
-    predictions_val = model.predict(x_val)
-    predictions_val = scaler.inverse_transform(predictions_val)
-    y_val = scaler.inverse_transform(y_val.reshape(-1, 1))
-    rmse = np.sqrt(mean_squared_error(y_val, predictions_val))
-    mae = mean_absolute_error(y_val, predictions_val)
-    mape = np.mean(np.abs((y_val - predictions_val) / y_val)) * 100
-    return rmse, mae, mape, predictions_val, y_val
-
-def predict_prices(model, scaled_data, scaler, prediction_days):
-    last_60_days = scaled_data[-60:]
-    x_predict = np.reshape(last_60_days, (1, last_60_days.shape[0], 1))
-    predicted_prices = []
-    for _ in range(prediction_days):
-        predicted_price = model.predict(x_predict)
-        predicted_prices.append(predicted_price[0, 0])
-        x_predict = np.append(x_predict[:, 1:, :], np.reshape(predicted_price, (1, 1, 1)), axis=1)
-    predicted_prices = scaler.inverse_transform(np.array(predicted_prices).reshape(-1, 1))
-    return predicted_prices
 #end 2408231528 Fabian
 
 
