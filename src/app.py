@@ -1,8 +1,9 @@
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from typing import Optional
+from auth import get_current_user  # Import the authentication dependency
 # from model import preprocess_data, prepare_datasets, create_model, train_model, validate_model, predict_prices
 import models.train_model
 import models.predict_model
@@ -14,14 +15,12 @@ import logging
 from datetime import datetime
 
 
-
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 
 # In-memory database for users
 users_db = {}
 
-# Pydantic model for a User
 class User(BaseModel):
     """Model representing a user in the application."""
     userid: Optional[int] = None
@@ -107,12 +106,13 @@ async def delete_user(userid: int):
 
 '''
 @app.post("/train/")
-def train_model(stock_request: StockRequest):
+def train_model(stock_request: StockRequest, current_user: dict = Depends(get_current_user)):
     """
     Train a stock prediction model for the specified symbol.
     
     Args:
         stock_request (StockRequest): The stock symbol and user ID for the request.
+        current_user (dict): The authenticated user data (automatically injected by Depends).
     
     Returns:
         dict: A message confirming the model was trained and saved.
@@ -132,7 +132,7 @@ def train_model(stock_request: StockRequest):
 
 '''
 @app.post("/predict/")
-def predict_stock(stock_request: StockRequest):
+def predict_stock(stock_request: StockRequest, current_user: dict = Depends(get_current_user)):
     """
     Predict stock prices for the specified symbol.
     
@@ -140,6 +140,7 @@ def predict_stock(stock_request: StockRequest):
     
     Args:
         stock_request (StockRequest): The stock symbol and user ID for the request.
+        current_user (dict): The authenticated user data (automatically injected by Depends).
     
     Returns:
         dict: The predicted stock prices.
@@ -150,6 +151,7 @@ def predict_stock(stock_request: StockRequest):
     symbol = stock_request.symbol.upper()
     userid = stock_request.userid
 
+    # Retrieve the user data from the in-memory database
     user = users_db.get(userid)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -157,6 +159,7 @@ def predict_stock(stock_request: StockRequest):
         raise HTTPException(status_code=403, detail="Your membership is not premium. Please upgrade to access this feature.")
 
     try:
+        # Assuming train_validate_predict function returns necessary prediction data
         _, _, predicted_prices = train_validate_predict(symbol=symbol)
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
