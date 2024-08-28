@@ -9,28 +9,6 @@ from sklearn.preprocessing import MinMaxScaler
 
 from utils import get_daily_stock_prices, create_my_dataset
 
-#start 2408231528 Fabian
-def preprocess_data(symbol, start_date=None, end_date=None, interval='1d'):
-    stock_prices_df = get_daily_stock_prices(symbol, start_date=start_date, end_date=end_date, interval=interval)
-    df = stock_prices_df['1. open'].values.reshape(-1, 1)
-    scaler = MinMaxScaler(feature_range=(0, 1))
-    scaled_data = scaler.fit_transform(df)
-    return scaled_data, scaler, stock_prices_df
-
-def prepare_datasets(scaled_data):
-    train_size = int(len(scaled_data) * 0.8)
-    dataset_train = scaled_data[:train_size]
-    dataset_val = scaled_data[train_size - 60:]
-    x_train, y_train = create_my_dataset(dataset_train, time_step=60)
-    x_val, y_val = create_my_dataset(dataset_val, time_step=60)
-    x_train = np.reshape(x_train, (x_train.shape[0], x_train.shape[1], 1))
-    x_val = np.reshape(x_val, (x_val.shape[0], x_val.shape[1], 1))
-    return x_train, y_train, x_val, y_val
-#end 2408231528 Fabian
-
-
-
-
 
 ## deprecated in favor of split functions for each elementary task of model action : load_data, train, get_metrics, predict.
 ## 2408231525 Fabian

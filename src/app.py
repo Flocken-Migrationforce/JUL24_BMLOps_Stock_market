@@ -1,8 +1,7 @@
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
-from pydantic import BaseModel
-from typing import Optional
+
 # from model import preprocess_data, prepare_datasets, create_model, train_model, validate_model, predict_prices
 import models.train_model
 import models.predict_model
@@ -13,34 +12,19 @@ import httpx  # Example for making async HTTP requests, waiting for processes to
 import logging
 from datetime import datetime
 
-
+import authen
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 
-# In-memory database for users
-users_db = {}
 
-# Pydantic model for a User
-class User(BaseModel):
-    """Model representing a user in the application."""
-    userid: Optional[int] = None
-    name: str
-    subscription: str
 
-class StockRequest(BaseModel):
-    """Model representing a request to predict stock prices."""
-    symbol: str
-    userid: int  # Include userid in the request to identify the user
 
 # Set up logging configuration
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# Functions
-async def get_next_user_id():
-    """Helper function to generate the next user ID."""
-    return max(users_db.keys(), default=0) + 1
+
 
 # App Endpoints
 @app.post("/users/")
