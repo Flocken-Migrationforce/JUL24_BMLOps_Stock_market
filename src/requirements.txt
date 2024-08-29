@@ -1,0 +1,15 @@
+fastapi==0.95.0
+uvicorn[standard]==0.23.0
+sqlalchemy
+requests
+pandas
+numpy
+matplotlib
+scikit-learn
+keras
+tensorflow
+python-dotenv
+passlib[bcrypt]
+pyjwt
+yfinance
+jinja2==3.1.2
