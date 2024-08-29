@@ -1,5 +1,3 @@
-<<<<<<< Updated upstream:src/visualization/visualize.py
-=======
 # visualization.py
 
 import matplotlib.pyplot as plt
@@ -46,4 +44,3 @@ def create_stock_chart(stock_prices_df, predicted_prices, symbol):
 	plt.close()
 
 	return image_base64
->>>>>>> Stashed changes:src/visualize.py

@@ -1,10 +1,8 @@
 
-
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, Depends
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from visualize import generate_visualizations
-from visualization.visualize import create_stock_chart
 import os
 
 # from model import preprocess_data, prepare_datasets, create_model, train_model, validate_model, predict_prices
@@ -16,8 +14,10 @@ from datetime import datetime
 
 # from logger_2408282248 import logger
 import logging
-import authen
+import auth
 import utils
+
+from auth import get_current_user  # Import the authtication dependency
 
 app = FastAPI()
 
@@ -31,106 +31,117 @@ logger = logging.getLogger(__name__)
 
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
-	return HTMLsites.TemplateResponse("index.html", {"request": request})
+    return HTMLsites.TemplateResponse("index.html", {"request": request})
 
 
 # App Endpoints
 @app.post("/users/")
-async def create_user(user: authen.User):
-	"""
-	Create a new user with the specified name and subscription.
+async def create_user(user: auth.User):
+    """
+    Create a new user with the specified name and subscription.
 
-	Args:
-		user (User): The user to create.
+    Args:
+        user (User): The user to create.
 
-	Returns:
-		User: The created user with a unique ID.
-	"""
-	user_id = authen.get_next_user_id()
-	user.userid = user_id
-	authen.users_db[user_id] = user
-	return user
+    Returns:
+        User: The created user with a unique ID.
+    """
+    user_id = auth.get_next_user_id()
+    user.userid = user_id
+    auth.users_db[user_id] = user
+    return user
 
 
 @app.get("/users/")
 async def get_users():
-	"""
-	Retrieve all registered users.
+    """
+    Retrieve all registered users.
 
-	Returns:
-		dict: A dictionary of users keyed by user ID.
-	"""
-	return authen.users_db
+    Returns:
+        dict: A dictionary of users keyed by user ID.
+    """
+    return auth.users_db
 
 
 @app.put("/users/{userid}")
-async def update_user(userid: int, user: authen.User):
-	"""
-	Update the name and subscription type of an existing user.
+async def update_user(userid: int, user: auth.User):
+    """
+    Update the name and subscription type of an existing user.
 
-	Args:
-		userid (int): The ID of the user to update.
-		user (User): The new user data.
+    Args:
+        userid (int): The ID of the user to update.
+        user (User): The new user data.
 
-	Returns:
-		User: The updated user data.
-	"""
-	if userid not in authen.users_db:
-		raise HTTPException(status_code=404, detail="User not found")
+    Returns:
+        User: The updated user data.
+    """
+    if userid not in auth.users_db:
+        raise HTTPException(status_code=404, detail="User not found")
 
-	# Update the user with the new data
-	authen.users_db[userid].name = user.name
-	authen.users_db[userid].subscription = user.subscription
-	return authen.users_db[userid]
+    # Update the user with the new data
+    auth.users_db[userid].name = user.name
+    auth.users_db[userid].subscription = user.subscription
+    return auth.users_db[userid]
 
 
 @app.delete("/users/{userid}")
 async def delete_user(userid: int):
-	"""
-	Delete a user by ID.
+    """
+    Delete a user by ID.
 
-	Args:
-		userid (int): The ID of the user to delete.
+    Args:
+        userid (int): The ID of the user to delete.
 
-	Returns:
-		dict: A confirmation message indicating the user was deleted.
-	"""
-	if userid not in authen.users_db:
-		raise HTTPException(status_code=404, detail="User not found")
-	del authen.users_db[userid]
-	return {"userid": userid, "deleted": True}
+    Returns:
+        dict: A confirmation message indicating the user was deleted.
+    """
+    if userid not in auth.users_db:
+        raise HTTPException(status_code=404, detail="User not found")
+    del auth.users_db[userid]
+    return {"userid": userid, "deleted": True}
 
 
 @app.post("/process")
 async def process(request: Request):
-	req_json = await request.json()
-	if 'data' not in req_json:
-		raise HTTPException(status_code=400, detail="No data provided")
+    req_json = await request.json()
+    if 'data' not in req_json:
+        raise HTTPException(status_code=400, detail="No data provided")
 
-	data = req_json['data']
-	try:
-		processed_data = utils.process_data(data)
-		return {"processed_data": processed_data}
-	except Exception as e:
-		raise HTTPException(status_code=500, detail=str(e))
+    data = req_json['data']
+    try:
+        processed_data = utils.process_data(data)
+        return {"processed_data": processed_data}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/visualize")
 async def visualize(request: Request):
-	req_json = await request.json()
-	if 'data' not in req_json:
-		raise HTTPException(status_code=400, detail="No data provided")
+    req_json = await request.json()
+    if 'data' not in req_json:
+        raise HTTPException(status_code=400, detail="No data provided")
 
-	data = req_json['data']
-	try:
-		visualization = generate_visualizations(data)
-		return {"visualization": visualization}
-	except Exception as e:
-		raise HTTPException(status_code=500, detail=str(e))
+    data = req_json['data']
+    try:
+        visualization = generate_visualizations(data)
+        return {"visualization": visualization}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/train/")
-async def train_model_endpoint(stock_request: utils.StockRequest):
+async def train_model_endpoint(stock_request: utils.StockRequest, current_user: dict = Depends(get_current_user)):
+    """
+    Train a stock prediction model for the specified symbol.
+
+    Args:
+        stock_request (StockRequest): The stock symbol and user ID for the request.
+        current_user (dict): The authticated user data (automatically injected by Depends).
+
+    Returns:
+        dict: A message confirming the model was trained and saved.
+    """
+
     symbol = stock_request.symbol.upper()
     if symbol not in ['AAPL', 'GOOGL', 'EURUSD=X', 'GC=F']:
         raise HTTPException(status_code=400, detail="Unsupported stock symbol")
@@ -151,11 +162,30 @@ async def train_model_endpoint(stock_request: utils.StockRequest):
 
 
 @app.post("/predict/")
-async def predict_stock(stock_request: utils.StockRequest):
+async def predict_stock(stock_request: utils.StockRequest, current_user: dict = Depends(get_current_user)):
+    """
+    Predict stock prices for the specified symbol.
+
+    Only users with a premium subscription can access this feature.
+
+    Args:
+        stock_request (StockRequest): The stock symbol and user ID for the request.
+        current_user (dict): The authticated user data (automatically injected by Depends).
+
+    Returns:
+        dict: The predicted stock prices.
+
+    Raises:
+        HTTPException: If the user is not premium or if the user or model is not found.
+    """
+
+
     symbol = stock_request.symbol.upper()
     userid = stock_request.userid
 
-    user = authen.users_db.get(userid)
+    # Retrieve the user data from the in-memory database
+    user = auth.users_db.get(userid)
+
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     if user.subscription != "premium":
@@ -163,6 +193,7 @@ async def predict_stock(stock_request: utils.StockRequest):
                             detail="Your membership is not premium. Please upgrade to access this feature.")
 
     try:
+        # Assuming train_validate_predict function returns necessary prediction data
         scaled_data, scaler, _ = utils.preprocess_data(symbol)
         model_path = f'models/{symbol}_prediction.h5'
         model = utils.load_model(model_path)

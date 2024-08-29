@@ -5,17 +5,43 @@ from passlib.context import CryptContext
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 security = HTTPBasic()
 
+
+# Pydantic model for a User
+from pydantic import BaseModel
+from typing import Optional
+
+class User(BaseModel):
+    """Model representing a user in the application."""
+    userid: Optional[int] = None
+    username: str
+    full_name: str
+    password: str
+    subscription: str
+
+
 users_db = {
-    "alice": {
-        "username": "alice",
-        "full_name": "Alice Wonderland",
-        "hashed_password": pwd_context.hash("secret1"),
+    "Leo": {
+        "username": "leo",
+        "full_name": "Leo Loeffler",
+        "hashed_password": pwd_context.hash("leodemo"),
         "subscription": "premium",
     },
-    "bob": {
-        "username": "bob",
-        "full_name": "Bob Builder",
-        "hashed_password": pwd_context.hash("secret2"),
+    "Fabian": {
+        "username": "fabian",
+        "full_name": "Fabian Flocken",
+        "hashed_password": pwd_context.hash("fabiandemo"),
+        "subscription": "premium",
+    },
+    "Mehdi": {
+        "username": "mehdi",
+        "full_name": "Mir Mehdi Seyedebrahimi",
+        "hashed_password": pwd_context.hash("mehdidemo"),
+        "subscription": "premium",
+    },
+    "User": {
+        "username": "user",
+        "full_name": "Demo User",
+        "hashed_password": pwd_context.hash("userdemo"),
         "subscription": "basic",
     },
 }
@@ -41,3 +67,6 @@ def get_current_user(credentials: HTTPBasicCredentials = Depends(security)):
         )
     return user
 
+async def get_next_user_id():
+    """Helper function to generate the next user ID."""
+    return max(users_db.keys(), default=0) + 1
