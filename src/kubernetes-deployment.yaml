@@ -15,7 +15,8 @@ spec:
     spec:
       containers:
       - name: stock-prediction
-        image: your-docker-registry/stock-prediction-app:latest
+#       image: {your-docker-registry}/stock-prediction-app:latest
+        image: itflocken/stock-prediction-app:latest
         ports:
         - containerPort: 8000
 ---
@@ -29,5 +30,5 @@ spec:
   ports:
     - protocol: TCP
       port: 80
-      targetPort: 8000
+      targetPort: 80
   type: LoadBalancer

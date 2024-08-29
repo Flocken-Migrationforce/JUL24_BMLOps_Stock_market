@@ -1,0 +1,40 @@
+version: '3.8'  # It's a good idea to use the latest version for new features and improvements
+
+services:
+  postgres:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data  # Persist PostgreSQL data
+
+  webserver:
+    image: apache/airflow:2.9.3  # Update to a more recent version
+    command: webserver
+    ports:
+      - "8080:8080"  # Change this if you want to use a different host port
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/logs:/opt/airflow/logs  # Optional: Persist Airflow logs
+      - ./airflow/plugins:/opt/airflow/plugins  # Optional: Persist Airflow plugins
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres/airflow  # Use PostgreSQL
+
+  scheduler:
+    image: apache/airflow:2.9.3  # Update to a more recent version
+    command: scheduler
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/logs:/opt/airflow/logs  # Optional: Persist Airflow logs
+      - ./airflow/plugins:/opt/airflow/plugins  # Optional: Persist Airflow plugins
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres/airflow  # Use PostgreSQL
+
+volumes:
+  postgres_data:  # Define a named volume for PostgreSQL data persistence
