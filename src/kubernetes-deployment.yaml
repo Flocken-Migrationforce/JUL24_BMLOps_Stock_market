@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: stock-prediction
-#       image: {your-docker-registry}/stock-prediction-app:latest
+#       image: ${$YOUR_DOCKER_USERNAME}/stock-prediction-app:latest
         image: itflocken/stock-prediction-app:latest
         ports:
         - containerPort: 8000
