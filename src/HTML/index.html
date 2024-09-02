@@ -3,42 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Data Processing and Visualization</title>
+    <title>Welcome - Stock Market Prediction MLOps Project</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>📈</text></svg>">
 </head>
 <body>
-    <h1>Data Processing and Visualization</h1>
-    <form id="dataForm">
-        <textarea id="dataInput" placeholder="Enter your data here..."></textarea>
-        <button type="button" onclick="processData()">Process Data</button>
-        <button type="button" onclick="visualizeData()">Visualize Data</button>
-    </form>
-    <div id="result"></div>
+    <header>
+        <h1>Stock Market Prediction MLOps Project</h1>
+        <h2>Fabian Flocken, Leonhard Löffler, Mir Mehdi Seyedebrahimi</h2>
+        <h5> 25.07.2024 - 09.09.2024 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 💲📈🧮 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        </h5>
+        <nav>
+            <a href="index.html" class="active">Welcome</a>
+            <a href="infrastructure.html">Infrastructure</a>
+            <a href="model.html">Model</a>
+            <a href="team.html">Team</a>
+            <a href="prediction.html">Prediction</a>
+            <a href="retrain.html">Retrain Model</a>
+            <a href="visualization.html">Visualization</a>
+        </nav>
+    </header>
+    <main>
+        <br>
+        <br>
+        <h2>Welcome to our Stock Market Prediction Tool!</h2>
+        <p>This MLOps project aims to predict stock prices for AAPL and GOOGL using advanced machine learning techniques.</p>
+        <img src="https://cdn.pixabay.com/photo/2019/02/03/11/00/stock-exchange-3972311_1280.jpg" alt="Stock Market picture" class="feature-image">
+    </main>
+    <footer>
+        <p>&copy; 2024 Stock Market Prediction MLOps Project
+        <br>
 
-    <script>
-        async function processData() {
-            const data = document.getElementById('dataInput').value;
-            const response = await fetch('/process', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ data: JSON.parse(data) })
-            });
-            const result = await response.json();
-            document.getElementById('result').innerText = JSON.stringify(result, null, 2);
-        }
 
-        async function visualizeData() {
-            const data = document.getElementById('dataInput').value;
-            const response = await fetch('/visualize', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ data: JSON.parse(data) })
-            });
-            const result = await response.json();
-            const img = new Image();
-            img.src = `data:image/png;base64,${result.visualization}`;
-            document.getElementById('result').innerHTML = '';
-            document.getElementById('result').appendChild(img);
-        }
-    </script>
+        25.07.2024 - 09.09.2024 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 💲📈🧮 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            <br><br><br>
+        <h3> Disclaimer:</h3>
+        Work was done and completed between 25.07.2024 and 09.09.2024.<br>
+        This project is the practical part of the Machine Learning Engineer training from DataScientest, cohort of July 2024 MLE Bootcamp.<br>
+        All rights reserved by the authors. © 2024</p>
+    </footer>
 </body>
 </html>

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Processing and Visualization</title>
+</head>
+<body>
+    <h1>Data Processing and Visualization</h1>
+    <form id="dataForm">
+        <textarea id="dataInput" placeholder="Enter your data here..."></textarea>
+        <button type="button" onclick="processData()">Process Data</button>
+        <button type="button" onclick="visualizeData()">Visualize Data</button>
+    </form>
+    <div id="result"></div>
+
+    <script>
+        async function processData() {
+            const data = document.getElementById('dataInput').value;
+            const response = await fetch('/process', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ data: JSON.parse(data) })
+            });
+            const result = await response.json();
+            document.getElementById('result').innerText = JSON.stringify(result, null, 2);
+        }
+
+        async function visualizeData() {
+            const data = document.getElementById('dataInput').value;
+            const response = await fetch('/visualize', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ data: JSON.parse(data) })
+            });
+            const result = await response.json();
+            const img = new Image();
+            img.src = `data:image/png;base64,${result.visualization}`;
+            document.getElementById('result').innerHTML = '';
+            document.getElementById('result').appendChild(img);
+        }
+    </script>
+</body>
+</html>

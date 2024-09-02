@@ -3,6 +3,14 @@ import subprocess
 import sys
 
 
+def ask_recreate_image():
+    while True:
+        response = input("Do you want to recreate the Docker image? (Y/N): ").strip().upper()
+        if response in ['Y', 'N']:
+            return response == 'Y'
+        else:
+            print("Invalid input. Please enter Y or N.")
+
 def set_docker_username():
 	if 'YOUR_DOCKER_USERNAME' not in os.environ:
 		docker_username = input("Please enter your Docker username: ").strip()
@@ -69,11 +77,15 @@ def deploy_to_kubernetes(docker_username):
 	else:
 		print("Skipping Kubernetes deployment reinitialization.")
 
+# Ask the user if they want to recreate the Docker image
+if ask_recreate_image():
+    docker_username = set_docker_username()
+    print(f"Please enter your Docker username, in order to build, push, initialize Docker image for Kubernetes deployment: {docker_username}")
 
-docker_username = set_docker_username()
-print(f"Please enter your Docker username, in order to build, push, initialize Docker image for Kubernetes deployment: {docker_username}")
+    setup_and_push_docker_image(docker_username)
+    deploy_to_kubernetes(docker_username)
 
-setup_and_push_docker_image(docker_username)
-deploy_to_kubernetes(docker_username)
-
-print("Docker setup and Kubernetes deployment completed successfully! Ready to start the app ...")
+    print("Docker setup and Kubernetes deployment completed successfully! Ready to start the app ...")
+else:
+    print("Skipping Docker image recreation and Kubernetes deployment.")
+    # sys.exit(0) # Would terminate the full program.

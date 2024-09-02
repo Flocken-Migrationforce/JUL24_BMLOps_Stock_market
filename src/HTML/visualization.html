@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visualization - Stock Market Prediction MLOps Project</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1>Data Visualization</h1>
+        <nav>
+            <a href="index.html">Welcome</a>
+            <a href="infrastructure.html">Infrastructure</a>
+            <a href="model.html">Model</a>
+            <a href="team.html">Team</a>
+            <a href="prediction.html">Prediction</a>
+            <a href="retrain.html">Retrain Model</a>
+            <a href="visualization.html" class="active">Visualization</a>
+        </nav>
+    </header>
+    <main>
+        <h2>Visualize Stock Data</h2>
+        <form id="visualizationForm">
+            <label for="stockSelect">Select Stock:</label>
+            <select id="stockSelect" required>
+                <option value="AAPL">AAPL (Apple Inc.)</option>
+                <option value="GOOGL">GOOGL (Alphabet Inc.)</option>
+            </select>
+            <label for="startDate">Start Date:</label>
+            <input type="date" id="startDate" required>
+            <label for="endDate">End Date:</label>
+            <input type="date" id="endDate" required>
+            <button type="button" onclick="visualizeData()">Visualize Data</button>
+        </form>
+        <div id="visualizationResult"></div>
+    </main>
+    <footer>
+        <p>&copy; 2024 Stock Market Prediction MLOps Project</p>
+    </footer>
+    <script>
+        async function visualizeData() {
+            const stock = document.getElementById('stockSelect').value;
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            const response = await fetch('/visualize', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ stock, startDate, endDate })
+            });
+            const result = await response.json();
+            const img = new Image();
+            img.src = `data:image/png;base64,${result.visualization}`;
+            document.getElementById('visualizationResult').innerHTML = '';
+            document.getElementById('visualizationResult').appendChild(img);
+        }
+    </script>
+</body>
+</html>
