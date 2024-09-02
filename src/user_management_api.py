@@ -25,10 +25,23 @@ class UserInDB(User):
     hashed_password: str
 
 
-def get_user(db, username: str):
-if username in db:
-    user_dict = db[username]
-    return UserInDB(**user_dict)
+async def get_current_user(token: str = Depends(oauth2_scheme)):
+    credentials_exception = HTTPException(
+        status_code=401,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get("sub")
+        if username is None:
+            raise credentials_exception
+    except JWTError:
+        raise credentials_exception
+    user = get_user(fake_users_db, username=username)
+    if user is None:
+        raise credentials_exception
+    return user
 
 # Function to write a new user to the database_users file
 def write_user_to_file(user: User, filename="database_users.txt"):
@@ -172,7 +185,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
 
 
 # Load users from file
-USERS_FILE = "users.txt"
+USERS_FILE = "database_users.txt"
 fake_users_db = load_users_from_file(USERS_FILE)
 
 

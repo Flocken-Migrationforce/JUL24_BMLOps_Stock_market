@@ -46,19 +46,19 @@ users_db = {
     },
 }
 
-def verify_password(plain_password, hashed_password):
+async def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
 
-def authenticate_user(username: str, password: str):
+async def authenticate_user(username: str, password: str):
     user = users_db.get(username)
     if not user:
         return False
-    if not verify_password(password, user['hashed_password']):
+    if not await verify_password(password, user['hashed_password']):
         return False
     return user
 
-def get_current_user(credentials: HTTPBasicCredentials = Depends(security)):
-    user = authenticate_user(credentials.username, credentials.password)
+async def get_current_user(credentials: HTTPBasicCredentials = Depends(security)):
+    user = await authenticate_user(credentials.username, credentials.password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
