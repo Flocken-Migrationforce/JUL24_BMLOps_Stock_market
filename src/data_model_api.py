@@ -13,6 +13,8 @@ from visualization.visualize import generate_visualizations, create_stock_chart
 #
 from auth import get_current_user  # Import the authentication dependency
 
+from keras.models import Sequential, load_model
+
 app = FastAPI()
 
 
@@ -82,17 +84,6 @@ async def train_model_endpoint(stock_request: StockRequest, current_user: dict =
             "metrics": {"RMSE": rmse, "MAE": mae, "MAPE": mape}}
 
 
-@app.post("/predict/")USER_MANAGEMENT_API_URL = "http://localhost:8001"  # Adjust this URL as needed
-
-async def get_user_data(userid: str, token: str):
-    async with httpx.AsyncClient() as client:
-        headers = {"Authorization": f"Bearer {token}"}
-        response = await client.get(f"{USER_MANAGEMENT_API_URL}/users/{userid}", headers=headers)
-        if response.status_code == 200:
-            return response.json()
-        else:
-            raise HTTPException(status_code=response.status_code, detail="Failed to fetch user data")
-
 @app.post("/predict/")
 async def predict_stock(stock_request: StockRequest, token: str = Depends(oauth2_scheme)):
     """
@@ -103,15 +94,22 @@ async def predict_stock(stock_request: StockRequest, token: str = Depends(oauth2
     userid = stock_request.userid
 
     # Fetch user data from User Management API
-    user = await get_user_data(userid, token)
+    async with httpx.AsyncClient() as client:
+        headers = {"Authorization": f"Bearer {token}"}
+        response = await client.get(f"{USER_MANAGEMENT_API_URL}/users/{userid}", headers=headers)
+        if response.status_code != 200:
+            raise HTTPException(status_code=response.status_code, detail="Failed to fetch user data")
+
+        user = response.json()
 
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    if user['subscription'] != "premium":
-        raise HTTPException(status_code=403, detail="Your membership is not premium. Please upgrade to access this feature.")
+    if user.get('subscription') != "premium":
+        raise HTTPException(status_code=403,
+                            detail="Your membership is not premium. Please upgrade to access this feature.")
 
     try:
-        # Assuming train_validate_predict function returns necessary prediction data
+        # Assuming these functions are defined elsewhere in your code
         scaled_data, scaler, _ = preprocess_data(symbol)
         model_path = f'models/{symbol}_prediction.h5'
         model = load_model(model_path)
@@ -123,8 +121,6 @@ async def predict_stock(stock_request: StockRequest, token: str = Depends(oauth2
         "symbol": symbol,
         "predicted_prices": predicted_prices.tolist()
     }
-
-
 
 @app.get("/visualize/{symbol}", response_class=HTMLResponse)
 async def visualize_stock(request: Request, symbol: str, days: int = 7):

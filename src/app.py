@@ -4,17 +4,17 @@ from fastapi.responses import HTMLResponse
 # from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+from fastapi.middleware.cors import CORSMiddleware
 
 import httpx  # Example for making async HTTP requests, waiting for processes to finish before calling another HTML
 from datetime import datetime
 import os
 import multiprocessing
-from fastapi.middleware.cors import CORSMiddleware
 
 # from model import preprocess_data, prepare_datasets, create_model, train_model, validate_model, predict_prices
 import models.train
 import models.predict
-from visualize import generate_visualizations
+from visualization.visualize import generate_visualizations, create_stock_chart
 
 
 
@@ -28,7 +28,8 @@ app = FastAPI()
 
 ##deprecatedFor app.mount(HTML) 2408302238start
 # Setting up HTML directory for displaying HTML Front End
-# HTMLsites = Jinja2Templates(directory="HTML")
+from fastapi.templating import Jinja2Templates
+HTMLsites = Jinja2Templates(directory="HTML")
 ##deprecatedFor app.mount(HTML) 2408302238end
 
 # Mount the static directory for CSS and other static files
@@ -47,8 +48,9 @@ async def home(request: Request):
 '''
 
 @app.get("/")
-async def home():
-    return FileResponse("HTML/index.html")
+async def home(request: Request):
+    return HTMLsites.TemplateResponse("index.html", {"request": request})
+    # return FileResponse("HTML/index.html")  # not dynamic HTML.
 
 
 # App Endpoints
@@ -127,11 +129,34 @@ async def get_async_data():
         return response.json()
 """
 
+# Function to start each FastAPI instance
+def start_app(module, port):
+    import uvicorn
+    uvicorn.run(f"{module}:app", host="0.0.0.0", port=port, reload=True)
+
+if __name__ == "__main__":
+    # Start all FastAPI instances
+    processes = [
+        multiprocessing.Process(target=start_app, args=("app", 8000)),
+        multiprocessing.Process(target=start_app, args=("user_management_api", 8001)),
+        multiprocessing.Process(target=start_app, args=("backend_api", 8002)),
+        multiprocessing.Process(target=start_app, args=("data_model_api", 8003)),
+    ]
+
+    for p in processes:
+        p.start()
+
+    for p in processes:
+        p.join()
+
+
+'''deprecated2409021413 when 4 FastAPI instances were introduced, not only 1.
 # start app when this file is run
 if __name__ == "__main__":
     import init
     import uvicorn
     uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)
+'''
 
 # Shutdown logging
 @app.on_event("shutdown")

@@ -5,6 +5,7 @@ from airflow.operators.python_operator import PythonOperator
 from datetime import datetime, timedelta
 from model import preprocess_data, prepare_datasets, create_model, train_model, validate_model, predict_prices
 import os
+from keras.models import Sequential, load_model
 
 default_args = {
     'owner': 'airflow',
