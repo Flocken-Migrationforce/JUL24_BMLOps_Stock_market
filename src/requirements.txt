@@ -11,5 +11,7 @@ tensorflow
 python-dotenv
 passlib[bcrypt]
 pyjwt
+pytest
+pytest-asyncio
 yfinance
 jinja2==3.1.2

@@ -1,0 +1,7 @@
+To execute the pytests navigate to the src folder and run the following command in PowerShell:
+    $env:PYTHONPATH = "."
+
+Then, execute:
+    pytest
+
+This will run all the test files using pytest.
