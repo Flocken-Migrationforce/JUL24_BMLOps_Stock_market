@@ -1,12 +1,15 @@
 # backend_api.py
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-import utils
+import data
 
 app = FastAPI()
 
 class StockRequest(BaseModel):
+    """Model representing a request to predict stock prices."""
     symbol: str
+    userid: int  # Include userid in the request to identify the user
+
 
 @app.post("/train/")
 async def train_model_endpoint(stock_request: StockRequest):
@@ -15,11 +18,11 @@ async def train_model_endpoint(stock_request: StockRequest):
         raise HTTPException(status_code=400, detail="Unsupported stock symbol")
 
     try:
-        scaled_data, scaler, _ = utils.preprocess_data(symbol)
-        x_train, y_train, x_val, y_val = utils.prepare_datasets(scaled_data)
-        model = utils.create_model()
-        utils.train_model(model, x_train, y_train)
-        rmse, mae, mape, _, _ = utils.validate_model(model, x_val, y_val, scaler)
+        scaled_data, scaler, _ = preprocess_data(symbol)
+        x_train, y_train, x_val, y_val = prepare_datasets(scaled_data)
+        model = create_model()
+        train_model(model, x_train, y_train)
+        rmse, mae, mape, _, _ = validate_model(model, x_val, y_val, scaler)
         model_path = f'models/{symbol}_prediction.h5'
         model.save(model_path)
     except Exception as e:

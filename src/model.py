@@ -6,7 +6,12 @@ from sklearn.preprocessing import MinMaxScaler
 from keras.models import Sequential, load_model
 from keras.layers import LSTM, Dense, Dropout
 from sklearn.metrics import mean_squared_error, mean_absolute_error
-from utils import get_daily_stock_prices, create_my_dataset
+from data import get_daily_stock_prices, create_my_dataset
+
+
+
+
+
 
 def preprocess_data(symbol, start_date=None, end_date=None, interval='1d'):
     stock_prices_df = get_daily_stock_prices(symbol, start_date=start_date, end_date=end_date, interval=interval)

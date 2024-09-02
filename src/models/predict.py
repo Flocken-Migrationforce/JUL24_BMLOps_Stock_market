@@ -5,6 +5,8 @@ def predict_prices(model, scaled_data, scaler, prediction_days):
     """
     Predicts the price for the next days based on the trained model.
 
+    MAYBE OLD! 2409021143FF
+
     :param model: choose pickled model
     :param scaled_data:
     :param scaler:

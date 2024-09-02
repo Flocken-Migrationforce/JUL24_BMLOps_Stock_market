@@ -12,8 +12,8 @@ import multiprocessing
 from fastapi.middleware.cors import CORSMiddleware
 
 # from model import preprocess_data, prepare_datasets, create_model, train_model, validate_model, predict_prices
-import models.train_model
-import models.predict_model
+import models.train
+import models.predict
 from visualize import generate_visualizations
 
 
@@ -21,7 +21,6 @@ from visualize import generate_visualizations
 # from logger_2408282248 import logger
 import logging
 import auth
-import utils
 
 from auth import get_current_user  # Import the authentication dependency
 

@@ -1,13 +1,25 @@
-from fastapi import FastAPI
-import utils
 from fastapi import FastAPI, HTTPException, Request, Depends
+import httpx # to connect jobs between FastAPI instances
+from pydantic import BaseModel
+from fastapi.security import OAuth2PasswordBearer
 
-import models.train_model
-import models.predict_model
-from visualize import generate_visualizations
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+from models.train import create_model, train_model, validate_model
+from models.predict import predict_prices
+from data.preprocessing import process_data, preprocess_data
+from data.pull import get_daily_stock_prices, create_my_dataset, prepare_datasets
+from visualization.visualize import generate_visualizations, create_stock_chart
+#
 from auth import get_current_user  # Import the authentication dependency
 
 app = FastAPI()
+
+
+class StockRequest(BaseModel):
+    """Model representing a request to predict stock prices."""
+    symbol: str
+    userid: str  # Include userid in the request to identify the user
 
 
 @app.post("/process")
@@ -18,7 +30,7 @@ async def process(request: Request):
 
     data = req_json['data']
     try:
-        processed_data = utils.process_data(data)
+        processed_data = process_data(data)
         return {"processed_data": processed_data}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -39,7 +51,7 @@ async def visualize(request: Request):
 
 
 @app.post("/train/")
-async def train_model_endpoint(stock_request: utils.StockRequest, current_user: dict = Depends(get_current_user)):
+async def train_model_endpoint(stock_request: StockRequest, current_user: dict = Depends(get_current_user)):
     """
     Train a stock prediction model for the specified symbol.
 
@@ -56,11 +68,11 @@ async def train_model_endpoint(stock_request: utils.StockRequest, current_user: 
         raise HTTPException(status_code=400, detail="Unsupported stock symbol")
 
     try:
-        scaled_data, scaler, _ = utils.preprocess_data(symbol)
-        x_train, y_train, x_val, y_val = utils.prepare_datasets(scaled_data)
-        model = utils.create_model()
-        utils.train_model(model, x_train, y_train)
-        rmse, mae, mape, _, _ = utils.validate_model(model, x_val, y_val, scaler)
+        scaled_data, scaler, _ = preprocess_data(symbol)
+        x_train, y_train, x_val, y_val = prepare_datasets(scaled_data)
+        model = create_model()
+        train_model(model, x_train, y_train)
+        rmse, mae, mape, _, _ = validate_model(model, x_val, y_val, scaler)
         model_path = f'models/{symbol}_prediction.h5'
         model.save(model_path)
     except Exception as e:
@@ -70,43 +82,40 @@ async def train_model_endpoint(stock_request: utils.StockRequest, current_user: 
             "metrics": {"RMSE": rmse, "MAE": mae, "MAPE": mape}}
 
 
+@app.post("/predict/")USER_MANAGEMENT_API_URL = "http://localhost:8001"  # Adjust this URL as needed
+
+async def get_user_data(userid: str, token: str):
+    async with httpx.AsyncClient() as client:
+        headers = {"Authorization": f"Bearer {token}"}
+        response = await client.get(f"{USER_MANAGEMENT_API_URL}/users/{userid}", headers=headers)
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise HTTPException(status_code=response.status_code, detail="Failed to fetch user data")
+
 @app.post("/predict/")
-async def predict_stock(stock_request: utils.StockRequest, current_user: dict = Depends(get_current_user)):
+async def predict_stock(stock_request: StockRequest, token: str = Depends(oauth2_scheme)):
     """
     Predict stock prices for the specified symbol.
-
     Only users with a premium subscription can access this feature.
-
-    Args:
-        stock_request (StockRequest): The stock symbol and user ID for the request.
-        current_user (dict): The authticated user data (automatically injected by Depends).
-
-    Returns:
-        dict: The predicted stock prices.
-
-    Raises:
-        HTTPException: If the user is not premium or if the user or model is not found.
     """
-
-
     symbol = stock_request.symbol.upper()
     userid = stock_request.userid
 
-    # Retrieve the user data from the in-memory database
-    user = auth.users_db.get(userid)
+    # Fetch user data from User Management API
+    user = await get_user_data(userid, token)
 
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    if user.subscription != "premium":
-        raise HTTPException(status_code=403,
-                            detail="Your membership is not premium. Please upgrade to access this feature.")
+    if user['subscription'] != "premium":
+        raise HTTPException(status_code=403, detail="Your membership is not premium. Please upgrade to access this feature.")
 
     try:
         # Assuming train_validate_predict function returns necessary prediction data
-        scaled_data, scaler, _ = utils.preprocess_data(symbol)
+        scaled_data, scaler, _ = preprocess_data(symbol)
         model_path = f'models/{symbol}_prediction.h5'
-        model = utils.load_model(model_path)
-        predicted_prices = utils.predict_prices(model, scaled_data, scaler, prediction_days=7)
+        model = load_model(model_path)
+        predicted_prices = predict_prices(model, scaled_data, scaler, prediction_days=7)
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
@@ -116,14 +125,15 @@ async def predict_stock(stock_request: utils.StockRequest, current_user: dict = 
     }
 
 
+
 @app.get("/visualize/{symbol}", response_class=HTMLResponse)
 async def visualize_stock(request: Request, symbol: str, days: int = 7):
     try:
-        scaled_data, scaler, stock_prices_df = utils.preprocess_data(symbol)
+        scaled_data, scaler, stock_prices_df = preprocess_data(symbol)
         model_path = f'models/{symbol}_prediction.h5'
-        model = utils.load_model(model_path)
-        predicted_prices = utils.predict_prices(model, scaled_data, scaler, prediction_days=days)
-        chart_image = utils.create_stock_chart(stock_prices_df, predicted_prices, symbol)
+        model = load_model(model_path)
+        predicted_prices = predict_prices(model, scaled_data, scaler, prediction_days=days)
+        chart_image = create_stock_chart(stock_prices_df, predicted_prices, symbol)
 
         return HTMLsites.TemplateResponse("stock_visualization.html", {
             "request": request,
