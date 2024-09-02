@@ -14,7 +14,7 @@ class User(BaseModel):
     """Model representing a user in the application."""
     userid: Optional[int] = None
     username: str
-    full_name: str
+    # full_name: str
     password: str
     subscription: str
 
