@@ -384,9 +384,6 @@ async def delete_user(userid: int):
 from fastapi import FastAPI, HTTPException, Request, Depends
 import httpx # to connect jobs between FastAPI instances
 from pydantic import BaseModel
-from fastapi.security import OAuth2PasswordBearer
-
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 from models.train import create_model, train_model, validate_model
 from models.predict import predict_prices
@@ -396,8 +393,6 @@ from visualization.visualize import generate_visualizations, create_stock_chart
 from auth import get_current_user  # Import the authentication dependency
 
 from keras.models import Sequential, load_model
-
-app = FastAPI()
 
 
 class StockRequest(BaseModel):
@@ -516,6 +511,7 @@ users_db = load_users_from_file(USERS_FILE)
 
 # Function to start each FastAPI instance
 if __name__ == "__main__":
+    import init
     import uvicorn
     uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)
 
