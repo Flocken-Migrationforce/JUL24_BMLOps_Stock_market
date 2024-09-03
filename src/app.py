@@ -11,7 +11,8 @@ import os
 # import models.predict
 # from visualization.visualize import generate_visualizations, create_stock_chart
 
-
+# List of supported symbols
+SUPPORTED_SYMBOLS = ["AAPL", "GOOGL", "EUR/USD", "GOLD"]
 
 
 import auth
@@ -153,6 +154,7 @@ async def create_user(user: User):
         "subscription": user.subscription
     }
 
+
     # Update the file
     with open(USERS_FILE, 'a') as file:
         file.write(f"{user.username},{user.password},{user.subscription}\n")
@@ -197,6 +199,7 @@ async def delete_user(username: str, current_user: User = Depends(get_current_us
 
 def load_users_from_file(filename):
     users_db = {}
+
     with open(filename, 'r') as file:
         for line in file:
             username, password, subscription = line.strip().split(',')

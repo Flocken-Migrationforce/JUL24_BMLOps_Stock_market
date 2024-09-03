@@ -1,7 +1,10 @@
+
 import pytest
 from fastapi.testclient import TestClient
 from fastapi import HTTPException, status
-from auth import app, verify_password, authenticate_user, get_current_user, get_next_user_id, users_db
+from auth import verify_password, authenticate_user, get_current_user, get_next_user_id, users_db
+# from ..auth import verify_password, authenticate_user, get_current_user, get_next_user_id, users_db
+# from ..app import app
 from fastapi.security import HTTPBasicCredentials
 from passlib.context import CryptContext
 
