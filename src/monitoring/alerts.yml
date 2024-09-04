@@ -1,0 +1,64 @@
+groups:
+  - name: fastapi_alerts
+    rules:
+      # High error rate alert for FastAPI
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{job="fastapi", status="500"}[5m]) > 0.05
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High error rate detected on FastAPI"
+          description: "More than 5% of HTTP requests are returning errors in the last 5 minutes."
+
+      # High latency alert for FastAPI
+      - alert: HighLatency
+        expr: histogram_quantile(0.9, rate(http_request_duration_seconds_bucket{job="fastapi"}[5m])) > 0.5
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High latency detected on FastAPI"
+          description: "The 90th percentile of request duration is higher than 500ms over the last 5 minutes."
+
+      # FastAPI instance down alert
+      - alert: InstanceDown
+        expr: up{job="fastapi"} == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "FastAPI instance is down"
+          description: "FastAPI instance {{ $labels.instance }} is down."
+
+  - name: kubernetes_alerts
+    rules:
+      # Alert for high memory usage on Kubernetes nodes
+      - alert: HighMemoryUsage
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes > 0.9
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High memory usage on Kubernetes node"
+          description: "Memory usage on node {{ $labels.instance }} has been above 90% for the last 5 minutes."
+
+      # Alert for high CPU usage on Kubernetes nodes
+      - alert: HighCPUUsage
+        expr: rate(node_cpu_seconds_total{mode="idle"}[5m]) < 0.2
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High CPU usage on Kubernetes node"
+          description: "CPU usage on node {{ $labels.instance }} has been above 80% for the last 5 minutes."
+
+      # Alert for pod being down
+      - alert: PodDown
+        expr: kube_pod_container_status_running == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Pod is down"
+          description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} is down."

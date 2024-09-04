@@ -9,10 +9,15 @@ SUPPORTED_SYMBOLS = ["AAPL", "GOOGL", "EUR/USD", "GOLD"]
 
 
 import auth
+from prometheus_fastapi_instrumentator import Instrumentator # for premetheus
 
 app = FastAPI()
 DATA_MODEL_URL = "localhost:8000"
 
+# Instrumentation
+Instrumentator().instrument(app).expose(app)  # to be exposed in prometheus 
+# In-memory database for users
+users_db = {}
 
 # Setting up HTML directory for displaying HTML Front End
 from fastapi.templating import Jinja2Templates
