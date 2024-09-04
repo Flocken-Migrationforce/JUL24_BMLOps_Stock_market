@@ -1,0 +1,22 @@
+global:
+  scrape_interval: 15s
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ["localhost:9093"]  # Ensure Alertmanager is running on this port
+
+# Load alerting rules from this file
+rule_files:
+  - "alerts.yml"  # Make sure the file is in the same directory as prometheus.yml
+
+scrape_configs:
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  - job_name: "fastapi"
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["localhost:8001"]  # Make sure FastAPI metrics are exposed on this port
