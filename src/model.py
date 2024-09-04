@@ -1,5 +1,3 @@
-# model.py
-
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
@@ -7,7 +5,8 @@ from keras.models import Sequential, load_model
 from keras.layers import LSTM, Dense, Dropout
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 from data import get_daily_stock_prices, create_my_dataset
-
+import tensorflow as tf
+tf.get_logger().setLevel('ERROR')
 
 
 
