@@ -110,7 +110,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
     return user
 
 # Function to write a new user to the database_users file
-def write_user_to_file(user: User, filename="database_users.txt"):
+def write_user_to_file(user: User, filename="database_users.csv"):
     try:
         with open(filename, 'a') as file:
             file.write(f"{user.username},{user.password},{user.subscription}\n")
@@ -245,7 +245,7 @@ async def read_users_me(current_user: User = Depends(get_current_user)):
 @app.post("/users/")
 async def create_user(user: User):
     """
-    Create a new user and write it to the file database_users.txt.
+    Create a new user and write it to the file database_users.csv.
 
     Args:
         user (User): The user to create.
@@ -490,7 +490,7 @@ async def visualize_stock(request: Request, symbol: str, days: int = 7):
 
 
 # Load users from file
-USERS_FILE = "database_users.txt"
+USERS_FILE = "database_users.csv"
 users_db = load_users_from_file(USERS_FILE)
 
 # Function to start each FastAPI instance

@@ -13,18 +13,19 @@ from typing import Optional, Dict
 from enum import Enum
 
 
+class SubscriptionType(str, Enum):
+    BASIC = "basic"
+    PREMIUM = "premium"
+
 class User(BaseModel):
     """Model representing a user in the application."""
     userid: Optional[int] = None
     username: str
     full_name: str
     email: EmailStr
-    password: str
+    hashed_password: str
     subscription: SubscriptionType
 
-class SubscriptionType(str, Enum):
-    BASIC = "basic"
-    PREMIUM = "premium"
 
 # users_db = {
 #     "Leo": {
@@ -62,14 +63,14 @@ def load_users_from_csv(filename: str) -> Dict[str, User]:
         for row in reader:
             try:
                 user = User(
-                    userid=row['userid'] if row['userid'] != 'None' else None,
+                    userid=int(row['userid']) if row['userid'] != 'None' else None,
                     username=row['username'],
                     full_name=row['full_name'],
                     email=row['email'],
-                    hashed_password=row['hashed_password'],
+                    hashed_password=row['hashed_password'],  # Note: This is actually the hashed password
                     subscription=row['subscription']
                 )
-                users_db[row['key']] = user
+                users_db[row['username']] = user
             except ValidationError as e:
                 print(f"Error validating user data: {e}")
     return users_db
@@ -78,11 +79,11 @@ def load_users_from_csv(filename: str) -> Dict[str, User]:
 async def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
 
-async def authenticate_user(username: str, password: str):
+async def authenticate_user(username: str, hashed_password: str):
     user = users_db.get(username)
     if not user:
         return False
-    if not await verify_password(password, user['hashed_password']):
+    if not await verify_password(hashed_password, user['hashed_password']):
         return False
     return user
 
@@ -103,5 +104,3 @@ async def get_next_user_id():
 
 # get all Users from database
 users_db = load_users_from_csv('database_users.csv')
-
-if __name__ == '__main__':
