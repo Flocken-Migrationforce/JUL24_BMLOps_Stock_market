@@ -1,7 +1,7 @@
 import pytest
 from fastapi.testclient import TestClient
 from app import app, USERS_FILE, load_users_from_file, write_user_to_file, verify_password, create_access_token, get_user, authenticate_user, get_current_user
-from auth import User, UserInDB, pwd_context
+from auth import User, pwd_context
 from datetime import timedelta
 
 client = TestClient(app)

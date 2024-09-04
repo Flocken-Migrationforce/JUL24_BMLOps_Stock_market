@@ -2,7 +2,18 @@
 import pytest
 from fastapi.testclient import TestClient
 from fastapi import HTTPException, status
-from auth import verify_password, authenticate_user, get_current_user, get_next_user_id, users_db
+#from app import app
+
+
+import sys
+import os
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from src.auth import verify_password, authenticate_user, get_current_user, get_next_user_id, users_db
+from src.app import app
+
+# from auth import verify_password, authenticate_user, get_current_user, get_next_user_id, users_db
 # from ..auth import verify_password, authenticate_user, get_current_user, get_next_user_id, users_db
 # from ..app import app
 from fastapi.security import HTTPBasicCredentials
