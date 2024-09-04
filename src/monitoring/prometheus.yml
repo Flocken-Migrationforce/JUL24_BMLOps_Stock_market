@@ -12,11 +12,44 @@ rule_files:
   - "alerts.yml"  # Make sure the file is in the same directory as prometheus.yml
 
 scrape_configs:
+  # Prometheus itself
   - job_name: "prometheus"
     static_configs:
       - targets: ["localhost:9090"]
 
+  # FastAPI monitoring
   - job_name: "fastapi"
     metrics_path: /metrics
     static_configs:
-      - targets: ["localhost:8001"]  # Make sure FastAPI metrics are exposed on this port
+      - targets: ["localhost:8001"]
+
+  # Kubernetes API server monitoring
+  - job_name: "kubernetes-api"
+    kubernetes_sd_configs:
+      - role: endpoints
+    scheme: https
+    tls_config:
+      insecure_skip_verify: true
+    bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+    static_configs:
+      - targets: ["kubernetes.default.svc:443"]
+
+  # Node exporter for Kubernetes nodes
+  - job_name: "node-exporter"
+    kubernetes_sd_configs:
+      - role: node
+    relabel_configs:
+      - action: labelmap
+        regex: __meta_kubernetes_node_label_(.+)
+      - target_label: __address__
+        replacement: kubernetes.default.svc:9100  # Ensure node exporter is running
+
+  # cAdvisor (for container monitoring)
+  - job_name: "cadvisor"
+    kubernetes_sd_configs:
+      - role: node
+    relabel_configs:
+      - action: labelmap
+        regex: __meta_kubernetes_node_label_(.+)
+      - target_label: __address__
+        replacement: kubernetes.default.svc:4194  # Ensure cAdvisor is running

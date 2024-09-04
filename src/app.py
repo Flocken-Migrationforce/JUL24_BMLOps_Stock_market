@@ -13,11 +13,13 @@ import httpx  # Example for making async HTTP requests, waiting for processes to
 import logging
 from datetime import datetime
 
-
+from prometheus_fastapi_instrumentator import Instrumentator # for premetheus
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 
+# Instrumentation
+Instrumentator().instrument(app).expose(app)  # to be exposed in prometheus 
 # In-memory database for users
 users_db = {}
 
@@ -54,7 +56,7 @@ async def create_user(user: User):
     Returns:
         User: The created user with a unique ID.
     """
-    user_id = get_next_user_id()
+    user_id = await get_next_user_id()
     user.userid = user_id
     users_db[user_id] = user
     return user
