@@ -1,6 +1,7 @@
 ## ! This is a LOCAL FILE, not to be shared in the Github repo (in productive cases).
 ## Only for demonstrational purposes, this file was shared with you.
-SECRET_KEY = "StockPrediction2024" # for verification of JWT token
+# SECRET_KEY = "StockPrediction2024" # for verification of JWT token
+SECRET_KEY = "d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7" # for verification of JWT token
 
 '''
 Purpose: The SECRET_KEY is used to digitally sign the JWT tokens when they are created and to verify their authenticity when they are received back from the client.

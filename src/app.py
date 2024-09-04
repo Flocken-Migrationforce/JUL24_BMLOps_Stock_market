@@ -35,6 +35,28 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 ##
 
+'''more advanced logging option :
+# idea Fabian 2409041140
+from logging.handlers import RotatingFileHandler
+
+# Create handlers
+c_handler = logging.StreamHandler()  # Console handler
+f_handler = RotatingFileHandler('app.log', maxBytes=10000, backupCount=5)  # File handler
+
+# Create formatters and add it to handlers
+log_format = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+c_handler.setFormatter(log_format)
+f_handler.setFormatter(log_format)
+
+# Add handlers to the logger
+logger.addHandler(c_handler)
+logger.addHandler(f_handler)
+
+# Set the logging level
+logger.setLevel(logging.INFO)
+
+'''
+
 
 
 ##############################################################################################################
@@ -79,11 +101,16 @@ async def predict_stock(request: Request):
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from datetime import timedelta
+import csv
 import auth
-from auth import User, Token, get_current_user, authenticate_user, create_access_token, get_password_hash, get_next_user_id, users_db
+from auth import User, Token, get_current_user, authenticate_user, create_access_token, get_password_hash, get_next_user_id, users_db, load_users_from_csv
 
 
 # JWT configueration should be kept secret and not in the code
+
+# Load users from file
+USERS_FILE = "database_users.csv"
+users_db = load_users_from_csv(USERS_FILE)
 
 
 @app.post("/token", response_model=Token)
@@ -115,12 +142,13 @@ async def create_user(user: User):
 
     Returns:
         User: The created user.
-    """
+"""
     if user.username in users_db:
         raise HTTPException(status_code=400, detail="Username already registered")
     user.userid = get_next_user_id()
     user.hashed_password = get_password_hash(user.hashed_password)
     users_db[user.username] = user
+    auth.add_user_to_csv('database_users.csv', user)  # Add user to CSV
     return user
 
 @app.get("/users/")
@@ -142,9 +170,11 @@ async def update_user(username: str, user: User, current_user: User = Depends(ge
     users_db[username]["subscription"] = user.subscription
 
     # Update the file
-    with open(USERS_FILE, 'w') as file:
+    with open(USERS_FILE, 'w', newline='') as file:
+        writer = csv.DictWriter(file, fieldnames=['userid', 'username', 'full_name', 'email', 'hashed_password', 'subscription'])
+        writer.writeheader()
         for u_name, u_data in users_db.items():
-            file.write(f"{u_name},{u_data['hashed_password']},{u_data['subscription']}\n")
+            writer.writerow(u_data.dict())
 
     return {"username": username, "subscription": user.subscription}
 
@@ -184,12 +214,6 @@ async def delete_user(username: str, current_user: User = Depends(get_current_us
     write_user_to_file(user)
 
     return {"username": user.username, "subscription": user.subscription}
-
-@app.get("/users/")
-async def get_users():
-
-    return [{"username": username, "subscription": user["subscription"]}
-            for username, user in auth.users_db.items()]
 
 
 ##############################################################################################################
@@ -316,9 +340,6 @@ async def visualize_stock(request: Request, symbol: str, days: int = 7):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-
-# Load users from file
-USERS_FILE = "database_users.csv"
 
 # Function to start each FastAPI instance
 if __name__ == "__main__":

@@ -73,6 +73,53 @@ users_db: Dict[str, User] = {}
 # }
 
 
+def add_user_to_csv(filename: str, user: User):
+    with open(filename, 'a', newline='') as csvfile:
+        fieldnames = ['userid', 'username', 'full_name', 'email', 'hashed_password', 'subscription']
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+
+        # If the file is empty, write the header
+        if csvfile.tell() == 0:
+            writer.writeheader()
+
+        writer.writerow({
+            'userid': user.userid,
+            'username': user.username,
+            'full_name': user.full_name,
+            'email': user.email,
+            'hashed_password': user.hashed_password,
+            'subscription': user.subscription
+        })
+
+
+def load_users_from_csv(filename: str):
+    users = {}
+    with open(filename, 'r', newline='') as csvfile:
+        reader = csv.DictReader(csvfile)
+        for row in reader:
+            try:
+                user = User(
+                    userid=int(row['userid']) if row['userid'] != 'None' else None,
+                    username=row['username'],
+                    full_name=row['full_name'],
+                    email=row['email'],
+                    hashed_password=row['hashed_password'],
+                    subscription=row['subscription']
+                )
+                users[row['username']] = user
+            except ValueError as e:
+                print(f"Error validating user data: {e}")
+    return users
+
+# If you need to maintain a global users_db, you can do this:
+users_db = {}
+
+def update_global_users_db(filename: str):
+    global users_db
+    users_db = load_users_from_csv(filename)
+
+
+'''deprecated2409041453FF
 def load_users_from_csv(filename: str):
     global users_db
     users_db = {}
@@ -90,7 +137,7 @@ def load_users_from_csv(filename: str):
                 )
                 users_db[row['username']] = user
             except ValueError as e:
-                print(f"Error validating user data: {e}")
+                print(f"Error validating user data: {e}")'''
 
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
@@ -106,8 +153,10 @@ def get_user(username: str):
 def authenticate_user(username: str, password: str):
     user = get_user(username)
     if not user:
+        print(f"User {username} not found.")
         return False
     if not verify_password(password, user.hashed_password):
+        print(f"Password for user {username} is incorrect.")
         return False
     return user
 
@@ -144,4 +193,4 @@ def get_next_user_id():
     return max([user.userid for user in users_db.values() if user.userid is not None], default=0) + 1
 
 # Load users from CSV file
-load_users_from_csv('database_users.csv')
+users_db = load_users_from_csv('database_users.csv')

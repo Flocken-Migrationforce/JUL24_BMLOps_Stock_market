@@ -1,5 +1,6 @@
 key,userid,username,full_name,email,hashed_password,subscription
-Leo,1,leo,Leo Loeffler,leo@example.com,$2b$12$1234567890abcdefghijkl.uQSxK4Xh5Tq9Ej7QZxGZq5R8vYJWO,premium
-Fabian,2,fabian,Fabian Flocken,fabian@example.com,$2b$12$abcdefghijk1234567890uWKqLG6eFZxT8Vj9RxKZq5R8vYJWO,premium
-Mehdi,3,mehdi,Mir Mehdi Seyedebrahimi,mehdi@example.com,$2b$12$ghijklmnop1234567890abuvWKqLG6eFZxT8Vj9RxKZq5R8vYJ,premium
-User,4,user,Demo User,user@example.com,$2b$12$pqrstuvwxyz1234567890abcWKqLG6eFZxT8Vj9RxKZq5R8vYJ,basic
+Admin,1,admin,Administrator,admin@admin.com.demo,$2b$12$vY8Lq2M1pEiAMGlWZ/jtVuYxIB41Y0DSWqCzKk/U5foWT1ekfE5aC,premium
+Leo,2,leo,Leo Loeffler,leo@example.com,$2b$12$.lBzHQhAlvImzVyzxmyGV.nI5z8vnkc.fa9knDE0JmAMZwyJwt4eS,premium
+Fabian,3,fabian,Fabian Flocken,fabian@example.com,$2b$12$p5YkL4EJC2puyXbLaDXPGubhNMdomKKRVIZQoav6O92aewzrlxd/e,premium
+Mehdi,4,mehdi,Mir Mehdi Seyedebrahimi,mehdi@example.com,$2b$12$7Q9yURr/5e/RJYjdM8fc.eoDT5hve6rbkSnLksaNhT3nihR1IRdhG,premium
+User,5,user,Demo User,user@example.com,$2b$12$mPQ7OD3nmlhDJ8MEPfNy1.jtHCJ6Ay4Lj7VRDOiE3TEvybXU8BWxe,basic
