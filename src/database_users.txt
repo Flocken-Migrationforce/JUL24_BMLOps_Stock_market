@@ -1,1 +1,5 @@
-fabian,fabiandemo,premium
+key,userid,username,full_name,email,hashed_password,subscription
+Leo,,leo,Leo Loeffler,leo@example.com,$2b$12$eImiTXuWVxfM37uY4JANjQ==,premium
+Fabian,,fabian,Fabian Flocken,fabian@example.com,$2b$12$eImiTXuWVxfM37uY4JANjQ==,premium
+Mehdi,,mehdi,Mir Mehdi Seyedebrahimi,mehdi@example.com,$2b$12$eImiTXuWVxfM37uY4JANjQ==,premium
+User,,user,Demo User,user@example.com,$2b$12$eImiTXuWVxfM37uY4JANjQ==,basic

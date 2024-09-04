@@ -2,38 +2,26 @@
 from fastapi import FastAPI, HTTPException, Request, Depends
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
-import httpx  # Example for making async HTTP requests, waiting for processes to finish before calling another HTML
-from datetime import datetime
-import os
 
-# # from model import preprocess_data, prepare_datasets, create_model, train_model, validate_model, predict_prices
-# import models.train
-# import models.predict
-# from visualization.visualize import generate_visualizations, create_stock_chart
 
 # List of supported symbols
 SUPPORTED_SYMBOLS = ["AAPL", "GOOGL", "EUR/USD", "GOLD"]
 
 
 import auth
-from fastapi.templating import Jinja2Templates
-from auth import get_current_user  # Import the authentication dependency
 
 app = FastAPI()
 DATA_MODEL_URL = "localhost:8000"
 
 
-##deprecatedFor app.mount(HTML) 2408302238start
 # Setting up HTML directory for displaying HTML Front End
 from fastapi.templating import Jinja2Templates
 HTMLsites = Jinja2Templates(directory="HTML")
-##deprecatedFor app.mount(HTML) 2408302238end
 
 # Mount the static directory for CSS and other static files
 app.mount("/static", StaticFiles(directory="HTML"), name="HTML")
 
 # Set up logging configuration
-# from logger_2408282248 import logger
 import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -44,9 +32,7 @@ logger = logging.getLogger(__name__)
 # FRONT END
 ##############################################################################################################
 
-
-# frontend_api.py
-
+# Endpoints :
 
 @app.get("/")
 async def home(request: Request):
@@ -72,8 +58,6 @@ async def predict_stock(request: Request):
     result = response.json()
     return HTMLsites.TemplateResponse("predict_result.html", {"request": request, "result": result})
 
-# Add more routes as needed
-
 
 ##############################################################################################################
 
@@ -93,7 +77,7 @@ from datetime import datetime, timedelta
 # This should be kept secret and not in the code
 SECRET_KEY = "your-secret-key"
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = 300
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
@@ -392,7 +376,7 @@ from visualization.visualize import generate_visualizations, create_stock_chart
 #
 from auth import get_current_user  # Import the authentication dependency
 
-from keras.models import Sequential, load_model
+from keras.models import load_model
 
 
 class StockRequest(BaseModel):
