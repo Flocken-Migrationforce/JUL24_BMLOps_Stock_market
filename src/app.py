@@ -1,8 +1,15 @@
-
 from fastapi import FastAPI, HTTPException, Request, Depends
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
+import os
+import sys
 
+## Set working directory for this script
+# # allows to run "python src/app.py and put src as the working directory, so that all normally works.
+script_dir = os.path.dirname(os.path.abspath(__file__))
+# Change the working directory to the script's directory (src folder)
+os.chdir(script_dir)
+##
 
 # List of supported symbols
 SUPPORTED_SYMBOLS = ["AAPL", "GOOGL", "EUR/USD", "GOLD"]
@@ -28,9 +35,8 @@ app.mount("/static", StaticFiles(directory="HTML"), name="HTML")
 
 # Set up logging configuration
 import logging
-import os
 
-## LOGGING
+### LOGGING
 # Get the current working directory and define the log directory path
 current_dir = os.path.dirname(os.path.abspath(__file__))
 log_dir = os.path.join(current_dir, '..', 'logs')
@@ -38,7 +44,27 @@ os.makedirs(log_dir, exist_ok=True) #  Ensure the log directory exists
 # Set up logging file 'app.log':
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', filename='app.log') # creates the log file 'app.log' in this directory 'src'
 logger = logging.getLogger(__name__)
-##
+
+# Set up logging filter
+class MessageFilter(logging.Filter):
+    def filter(self, record):
+        return not record.getMessage().startswith("oneDNN custom operations are on")
+
+# Apply the filter to the TensorFlow logger
+tf_logger = logging.getLogger('tensorflow')
+tf_logger.addFilter(MessageFilter())
+
+# ignore tensorflow warning of using oneDNN custom operations for boosting calculation:
+# I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+## DOESNT WORK:
+# import warnings, re
+# warnings.filterwarnings('ignore', category=UserWarning, module='tensorflow') # ignores all warnings in general from tensorflow.
+# warnings.filterwarnings('ignore', message='.*oneDNN custom operations are on.*') # ignore specifically the encountered oneDNN enabled warning.
+# warnings.filterwarnings('ignore', message='oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.')
+# warnings.filterwarnings('ignore', message=re.compile(r'oneDNN custom operations are on.*floating-point round-off errors.*TF_ENABLE_ONEDNN_OPTS=0')) # DOESN'T WORK for tensorflow INFO I message. Can't use import warnings to cope with that information pop up.
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
+
+###
 
 '''more advanced logging option :
 # idea Fabian 2409041140
@@ -239,7 +265,6 @@ from auth import get_current_user  # Import the authentication dependency
 
 from tensorflow.keras.models import load_model
 
-
 class StockRequest(BaseModel):
     """Model representing a request to predict stock prices."""
     symbol: str
@@ -378,18 +403,19 @@ import subprocess
 
 def start_grafana_port_forward():
     try:
-        # Start the port-forwarding process
-        subprocess.Popen(
+        process = subprocess.Popen(
             ["kubectl", "port-forward", "service/grafana", "3000:80"],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE
         )
-        print("Started port-forwarding for Grafana on port 3000")
+        print("Started port-forwarding for Grafana on port 3000.")
+        return process
     except Exception as e:
         print(f"Failed to start port-forwarding: {e}")
+        return None
 
-start_grafana_port_forward()
 
+'''
 def start_prometheus():
     try:
         # Start Prometheus using subprocess
@@ -402,6 +428,34 @@ def start_prometheus():
         print("Prometheus has started successfully.")
     except Exception as e:
         print(f"Failed to start Prometheus: {e}")
+        '''
+
+
+def start_prometheus():
+    # Get the current script's directory
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+
+    # Construct the path to prometheus.yml
+    prometheus_yml_path = os.path.join(current_dir, 'monitoring', 'prometheus.yml')
+
+    # Ensure the path is absolute
+    prometheus_yml_path = os.path.abspath(prometheus_yml_path)
+
+    # Docker command to run Prometheus
+    docker_command = [
+        "docker", "run", "-d",  # Run in detached mode
+        "-p", "9090:9090",
+        "-v", f"{prometheus_yml_path}:/monitoring/prometheus.yml",
+        "prom/prometheus"
+    ]
+
+    try:
+        subprocess.run(docker_command, check=True)
+        print("Prometheus started successfully")
+    except subprocess.CalledProcessError as e:
+        print(f"Failed to start Prometheus: {e}")
+
+
 #######################################################################################
 
 
@@ -413,13 +467,18 @@ def start_prometheus():
 
 # Function to start each FastAPI instance
 if __name__ == "__main__":
+    print("Starting the Stock Prediction App ...")
     import init
     import uvicorn
     uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)
 
+    from time import sleep
+    sleep(5)  # Give the app some time to start
     # start monitoring Prometheus & Grafana & Alertmanager :
     start_prometheus()
     start_grafana_port_forward()
+
+    print("Stock Prediction App started successfully ! Ready for interactions. ")
 
 ##############################################################################################################
 
