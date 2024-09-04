@@ -97,3 +97,18 @@ target/
 /docker-compose2408021054PostgreSQL used, and updated Airflow from 2.3.0 to 2.9.3, maybe not good.yml
 /docker-compose_-1.yml
 /src/archive/
+/get_helm.sh
+/prometheus-2.43.0.linux-amd64/
+/src/monitoring/prometheus-2.54.1.windows-amd64/
+/src/monitoring/alertmanager/
+/src/monitoring/console_libraries/
+/src/monitoring/consoles/
+/src/monitoring/data/
+/src/monitoring/prometheus-2.54.1.windows-amd64/
+/src/monitoring/alertmanager-0.27.0.windows-amd64/
+/prometheus-2.43.0.linux-amd64.tar.gz
+/LICENSE/
+/src/monitoring/prometheus.exe
+/src/monitoring/promtool.exe
+/src/monitoring/LICENSE
+/src/monitoring/NOTICE
