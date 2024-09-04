@@ -81,18 +81,11 @@ async def train_page(request: Request):
 
 @app.get("/predict")
 async def predict_page(request: Request):
+    """
+    Render the prediction page with the form to input stock symbol.
+    """
     return HTMLsites.TemplateResponse("predict.html", {"request": request})
 
-@app.post("/predict")
-async def predict_stock(request: Request):
-    form_data = await request.form()
-    symbol = form_data.get("symbol")
-
-    async with httpx.AsyncClient() as client:
-        response = await client.post(f"{DATA_MODEL_URL}/predict/", json={"symbol": symbol})
-
-    result = response.json()
-    return HTMLsites.TemplateResponse("predict_result.html", {"request": request, "result": result})
 
 
 ##############################################################################################################
@@ -244,7 +237,7 @@ from visualization.visualize import generate_visualizations, create_stock_chart
 #
 from auth import get_current_user  # Import the authentication dependency
 
-from keras.models import load_model
+from tensorflow.keras.models import load_model
 
 
 class StockRequest(BaseModel):
@@ -299,13 +292,39 @@ async def train_model_endpoint(stock_request: StockRequest, current_user: dict =
             "metrics": {"RMSE": rmse, "MAE": mae, "MAPE": mape}}
 
 
-@app.post("/predict/")
-async def predict_stock(stock_request: StockRequest, current_user: User = Depends(get_current_user)):
+@app.get("/predict")
+async def predict_page(request: Request):
     """
-    Predict stock prices for the specified symbol.
+    Render the prediction page with the form to input stock symbol.
+    """
+    return HTMLsites.TemplateResponse("predict.html", {"request": request})
+
+@app.get("/predict")
+async def predict_page(request: Request):
+    """
+    Render the prediction page with the form to input stock symbol.
+    """
+    return HTMLsites.TemplateResponse("predict.html", {"request": request})
+
+
+@app.post("/predict")
+async def predict_stock(
+    request: Request,
+    stock_request: StockRequest = Depends(),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Handle stock prediction requests.
+    This function serves both API and web form submissions.
     Only users with a premium subscription can access this feature.
     """
-    symbol = stock_request.symbol.upper()
+    if request.headers.get("content-type") == "application/json":
+        # API request
+        symbol = stock_request.symbol.upper()
+    else:
+        # Form submission
+        form_data = await request.form()
+        symbol = form_data.get("symbol", "").upper()
 
     if current_user.subscription != "premium":
         raise HTTPException(status_code=403,
@@ -317,13 +336,21 @@ async def predict_stock(stock_request: StockRequest, current_user: User = Depend
         model_path = f'models/{symbol}_prediction.h5'
         model = load_model(model_path)
         predicted_prices = predict_prices(model, scaled_data, scaler, prediction_days=7)
+
+        result = {
+            "symbol": symbol,
+            "predicted_prices": predicted_prices.tolist()
+        }
+
+        if request.headers.get("content-type") == "application/json":
+            # Return JSON for API requests
+            return result
+        else:
+            # Render HTML template for web form submissions
+            return HTMLsites.TemplateResponse("predict_result.html", {"request": request, "result": result})
+
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
-
-    return {
-        "symbol": symbol,
-        "predicted_prices": predicted_prices.tolist()
-    }
 
 
 @app.get("/visualize/{symbol}", response_class=HTMLResponse)
@@ -344,6 +371,44 @@ async def visualize_stock(request: Request, symbol: str, days: int = 7):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+#######################################################################################
+## Functions for Monitoring with Prometheus and Grafana and Alertmanager:
+#######################################################################################
+import subprocess
+
+def start_grafana_port_forward():
+    try:
+        # Start the port-forwarding process
+        subprocess.Popen(
+            ["kubectl", "port-forward", "service/grafana", "3000:80"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+        print("Started port-forwarding for Grafana on port 3000")
+    except Exception as e:
+        print(f"Failed to start port-forwarding: {e}")
+
+start_grafana_port_forward()
+
+def start_prometheus():
+    try:
+        # Start Prometheus using subprocess
+        subprocess.Popen(
+            ["./prometheus.exe", "--config.file=prometheus.yml"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            shell=True
+        )
+        print("Prometheus has started successfully.")
+    except Exception as e:
+        print(f"Failed to start Prometheus: {e}")
+#######################################################################################
+
+
+
+
+##############################################################################################################
+##############################################################################################################
 
 
 # Function to start each FastAPI instance
@@ -352,9 +417,11 @@ if __name__ == "__main__":
     import uvicorn
     uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)
 
-    ##############################################################################################################
+    # start monitoring Prometheus & Grafana & Alertmanager :
+    start_prometheus()
+    start_grafana_port_forward()
 
-
+##############################################################################################################
 
 
 # Shutdown logging
