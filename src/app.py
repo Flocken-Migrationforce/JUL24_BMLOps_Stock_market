@@ -23,8 +23,17 @@ app.mount("/static", StaticFiles(directory="HTML"), name="HTML")
 
 # Set up logging configuration
 import logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+import os
+
+## LOGGING
+# Get the current working directory and define the log directory path
+current_dir = os.path.dirname(os.path.abspath(__file__))
+log_dir = os.path.join(current_dir, '..', 'logs')
+os.makedirs(log_dir, exist_ok=True) #  Ensure the log directory exists
+# Set up logging file 'app.log':
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', filename='app.log') # creates the log file 'app.log' in this directory 'src'
 logger = logging.getLogger(__name__)
+##
 
 
 
@@ -67,91 +76,65 @@ async def predict_stock(request: Request):
 ##############################################################################################################
 
 
-from fastapi import FastAPI, HTTPException, Depends
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from pydantic import BaseModel
-from jose import JWTError, jwt
-from passlib.context import CryptContext
-from datetime import datetime, timedelta
-
-# This should be kept secret and not in the code
-SECRET_KEY = "your-secret-key"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 300
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-
-class User(BaseModel):
-    username: str
-    password: str
-    subscription: str
-
-class UserInDB(User):
-    hashed_password: str
+from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordRequestForm
+from datetime import timedelta
+import auth
+from auth import User, Token, get_current_user, authenticate_user, create_access_token, get_password_hash, get_next_user_id, users_db
 
 
-async def get_current_user(token: str = Depends(oauth2_scheme)):
-    credentials_exception = HTTPException(
-        status_code=401,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        username: str = payload.get("sub")
-        if username is None:
-            raise credentials_exception
-    except JWTError:
-        raise credentials_exception
-    user = get_user(users_db, username=username)
-    if user is None:
-        raise credentials_exception
-    return user
+# JWT configueration should be kept secret and not in the code
 
-# Function to write a new user to the database_users file
-def write_user_to_file(user: User, filename="database_users.csv"):
-    try:
-        with open(filename, 'a') as file:
-            file.write(f"{user.username},{user.password},{user.subscription}\n")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error writing to file: {str(e)}")
 
-def authenticate_user(fake_db, username: str, password: str):
-    user = get_user(fake_db, username)
+@app.post("/token", response_model=Token)
+async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
+    user = authenticate_user(form_data.username, form_data.password)
     if not user:
-        return False
-    if not verify_password(password, user.hashed_password):
-        return False
-    return user
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    access_token_expires = timedelta(minutes=auth.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": user.username}, expires_delta=access_token_expires
+    )
+    return {"access_token": access_token, "token_type": "bearer"}
 
+@app.get("/users/me", response_model=User)
+async def read_users_me(current_user: User = Depends(get_current_user)):
+    return current_user
 
-@app.post("/users/")
+@app.post("/users/", response_model=User)
 async def create_user(user: User):
+    """
+    Create a new user and write it to the file database_users.csv.
+
+    Args:
+        user (User): The user to create.
+
+    Returns:
+        User: The created user.
+    """
     if user.username in users_db:
-        raise HTTPException(status_code=400, detail="Username already exists")
-
-    hashed_password = pwd_context.hash(user.password)
-    users_db[user.username] = {
-        "username": user.username,
-        "hashed_password": hashed_password,
-        "subscription": user.subscription
-    }
-
-
-    # Update the file
-    with open(USERS_FILE, 'a') as file:
-        file.write(f"{user.username},{user.password},{user.subscription}\n")
-
-    return {"username": user.username, "subscription": user.subscription}
+        raise HTTPException(status_code=400, detail="Username already registered")
+    user.userid = get_next_user_id()
+    user.hashed_password = get_password_hash(user.hashed_password)
+    users_db[user.username] = user
+    return user
 
 @app.get("/users/")
 async def get_users(current_user: User = Depends(get_current_user)):
-    return [{"username": username, "subscription": user["subscription"]}
+    """
+    Retrieve all registered users.
+
+    Returns:
+        dict: A dictionary of users keyed by username.
+    """
+    return [{"username": username, "subscription": user.subscription}
             for username, user in users_db.items()]
 
-
-@app.put("/users/{username}")
+@app.put("/users/{username}", response_model=User)
 async def update_user(username: str, user: User, current_user: User = Depends(get_current_user)):
     if username not in users_db:
         raise HTTPException(status_code=404, detail="User not found")
@@ -181,78 +164,7 @@ async def delete_user(username: str, current_user: User = Depends(get_current_us
     return {"username": username, "deleted": True}
 
 
-def load_users_from_file(filename):
-    users_db = {}
 
-    with open(filename, 'r') as file:
-        for line in file:
-            username, password, subscription = line.strip().split(',')
-            users_db[username] = {
-                "username": username,
-                "hashed_password": pwd_context.hash(password),
-                "subscription": subscription
-            }
-    return users_db
-
-def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
-
-def get_user(db, username: str):
-    if username in db:
-        user_dict = db[username]
-        return UserInDB(**user_dict)
-
-def authenticate_user(fake_db, username: str, password: str):
-    user = get_user(fake_db, username)
-    if not user:
-        return False
-    if not verify_password(password, user.hashed_password):
-        return False
-    return user
-
-def create_access_token(data: dict, expires_delta: timedelta = None):
-    to_encode = data.copy()
-    if expires_delta:
-        expire = datetime.utcnow() + expires_delta
-    else:
-        expire = datetime.utcnow() + timedelta(minutes=15)
-    to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    return encoded_jwt
-
-
-
-
-@app.post("/token")
-async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
-    user = authenticate_user(users_db, form_data.username, form_data.password)
-    if not user:
-        raise HTTPException(
-            status_code=401,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={"sub": user.username}, expires_delta=access_token_expires
-    )
-    return {"access_token": access_token, "token_type": "bearer"}
-
-@app.get("/users/me")
-async def read_users_me(current_user: User = Depends(get_current_user)):
-    return current_user
-
-@app.post("/users/")
-async def create_user(user: User):
-    """
-    Create a new user and write it to the file database_users.csv.
-
-    Args:
-        user (User): The user to create.
-
-    Returns:
-        User: The created user.
-    """
     # Check if the user already exists
     if user.username in auth.users_db:
         raise HTTPException(status_code=400, detail="Username already exists")
@@ -275,12 +187,7 @@ async def create_user(user: User):
 
 @app.get("/users/")
 async def get_users():
-    """
-    Retrieve all registered users.
 
-    Returns:
-        dict: A dictionary of users keyed by username.
-    """
     return [{"username": username, "subscription": user["subscription"]}
             for username, user in auth.users_db.items()]
 
@@ -290,74 +197,6 @@ async def get_users():
 
 
 
-
-
-
-# App Endpoints
-@app.post("/users/")
-async def create_user(user: auth.User):
-    """
-    Create a new user with the specified name and subscription.
-
-    Args:
-        user (User): The user to create.
-
-    Returns:
-        User: The created user with a unique ID.
-    """
-    user_id = auth.get_next_user_id()
-    user.userid = user_id
-    auth.users_db[user_id] = user
-    return user
-
-
-@app.get("/users/")
-async def get_users():
-    """
-    Retrieve all registered users.
-
-    Returns:
-        dict: A dictionary of users keyed by user ID.
-    """
-    return auth.users_db
-
-
-@app.put("/users/{userid}")
-async def update_user(userid: int, user: auth.User):
-    """
-    Update the name and subscription type of an existing user.
-
-    Args:
-        userid (int): The ID of the user to update.
-        user (User): The new user data.
-
-    Returns:
-        User: The updated user data.
-    """
-    if userid not in auth.users_db:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    # Update the user with the new data
-    auth.users_db[userid].name = user.name
-    auth.users_db[userid].subscription = user.subscription
-    return auth.users_db[userid]
-
-
-@app.delete("/users/{userid}")
-async def delete_user(userid: int):
-    """
-    Delete a user by ID.
-
-    Args:
-        userid (int): The ID of the user to delete.
-
-    Returns:
-        dict: A confirmation message indicating the user was deleted.
-    """
-    if userid not in auth.users_db:
-        raise HTTPException(status_code=404, detail="User not found")
-    del auth.users_db[userid]
-    return {"userid": userid, "deleted": True}
 
 
 ##############################################################################################################
@@ -432,26 +271,14 @@ async def train_model_endpoint(stock_request: StockRequest, current_user: dict =
 
 
 @app.post("/predict/")
-async def predict_stock(stock_request: StockRequest, token: str = Depends(oauth2_scheme)):
+async def predict_stock(stock_request: StockRequest, current_user: User = Depends(get_current_user)):
     """
     Predict stock prices for the specified symbol.
     Only users with a premium subscription can access this feature.
     """
     symbol = stock_request.symbol.upper()
-    userid = stock_request.userid
 
-    # Fetch user data from User Management API
-    async with httpx.AsyncClient() as client:
-        headers = {"Authorization": f"Bearer {token}"}
-        response = await client.get(f"{DATA_MODEL_URL}/users/{userid}", headers=headers)
-        if response.status_code != 200:
-            raise HTTPException(status_code=response.status_code, detail="Failed to fetch user data")
-
-        user = response.json()
-
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    if user.get('subscription') != "premium":
+    if current_user.subscription != "premium":
         raise HTTPException(status_code=403,
                             detail="Your membership is not premium. Please upgrade to access this feature.")
 
@@ -468,6 +295,7 @@ async def predict_stock(stock_request: StockRequest, token: str = Depends(oauth2
         "symbol": symbol,
         "predicted_prices": predicted_prices.tolist()
     }
+
 
 @app.get("/visualize/{symbol}", response_class=HTMLResponse)
 async def visualize_stock(request: Request, symbol: str, days: int = 7):
@@ -491,7 +319,6 @@ async def visualize_stock(request: Request, symbol: str, days: int = 7):
 
 # Load users from file
 USERS_FILE = "database_users.csv"
-users_db = load_users_from_file(USERS_FILE)
 
 # Function to start each FastAPI instance
 if __name__ == "__main__":
@@ -507,5 +334,6 @@ if __name__ == "__main__":
 # Shutdown logging
 @app.on_event("shutdown")
 def shutdown_event():
+    from datetime import datetime
     current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     logger.info(f"App was shut down at {current_time}")
