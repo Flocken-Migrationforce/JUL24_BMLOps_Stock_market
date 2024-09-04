@@ -1,3 +1,5 @@
+## ! This is a LOCAL FILE, not to be shared in the Github repo (in productive cases).
+## Only for demonstrational purposes, this file was shared with you.
 SECRET_KEY = "StockPrediction2024" # for verification of JWT token
 
 '''
