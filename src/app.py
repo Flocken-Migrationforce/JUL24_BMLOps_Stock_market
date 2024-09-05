@@ -14,7 +14,7 @@ os.chdir(script_dir)
 ##
 
 # List of supported symbols
-SUPPORTED_SYMBOLS = ["AAPL", "GOOGL", "EUR/USD", "GOLD"]
+SUPPORTED_SYMBOLS = ["AAPL", "GOOGL", "GTLE", "META", "MSFT"]
 
 
 import auth
@@ -414,7 +414,7 @@ async def train_model_endpoint(stock_request: StockRequest, current_user: dict =
         dict: A message confirming the model was trained and saved.
     """
     symbol = stock_request.symbol.upper()
-    if symbol not in ['AAPL', 'GOOGL', 'EURUSD=X', 'GC=F']:
+    if symbol not in SUPPORTED_SYMBOLS:
         raise HTTPException(status_code=400, detail="Unsupported stock symbol")
 
     try:
