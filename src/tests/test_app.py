@@ -1,7 +1,7 @@
 import pytest
 from fastapi.testclient import TestClient
-from app import app, USERS_FILE, load_users_from_csv, write_user_to_file, create_access_token, authenticate_user, get_current_user
-from auth import verify_password, authenticate_user, get_current_user 
+from app import ..app, USERS_FILE, load_users_from_csv, write_user_to_file, create_access_token, authenticate_user, get_current_user
+from ..auth import verify_password, authenticate_user, get_current_user
 from datetime import timedelta
 
 client = TestClient(app)

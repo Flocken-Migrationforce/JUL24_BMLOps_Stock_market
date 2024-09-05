@@ -4,6 +4,8 @@ from fastapi.staticfiles import StaticFiles
 import os
 import sys
 
+from starlette.responses import JSONResponse
+
 ## Set working directory for this script
 # # allows to run "python src/app.py and put src as the working directory, so that all normally works.
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -100,18 +102,100 @@ logger.setLevel(logging.INFO)
 async def home(request: Request):
     return HTMLsites.TemplateResponse("index.html", {"request": request})
 
-@app.get("/train")
-async def train_page(request: Request):
-    return HTMLsites.TemplateResponse("train.html", {"request": request})
+from pydantic import BaseModel
+
+class StockRequest(BaseModel):
+    """Model representing a request to predict stock prices."""
+    symbol: str
+    userid: int  # Include userid in the request to identify the user
+
+from typing import Literal
+
+class StockRequest(BaseModel):
+    symbol: Literal['AAPL', 'GOOGL', 'EURUSD=X', 'GC=F']
+
+@app.post("/train/{stocksymbol}")
+async def train_model_endpoint(stock_request: StockRequest):
+    symbol = stock_request.symbol.upper()
+    if symbol not in ['AAPL', 'GOOGL', 'EURUSD=X', 'GC=F']:
+        raise HTTPException(status_code=400, detail="Unsupported stock symbol. Predictions are currently only" \
+                                                    "allowed for AAPL, GOOGL, EURUSD=X and GC=F.")
+
+    try:
+        scaled_data, scaler, _ = preprocess_data(symbol)
+        x_train, y_train, x_val, y_val = prepare_datasets(scaled_data)
+        model = create_model()
+        train_model(model, x_train, y_train)
+        rmse, mae, mape, _, _ = validate_model(model, x_val, y_val, scaler)
+        model_path = f'models/{symbol}_prediction.h5'
+        model.save(model_path)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+    return {"message": f"Model for {symbol} trained and saved successfully.",
+            "metrics": {"RMSE": rmse, "MAE": mae, "MAPE": mape}}
 
 
-@app.get("/predict")
-async def predict_page(request: Request):
+def train_and_save_model(model, x_train, y_train, x_val, y_val, scaler, symbol, model_path):
+    try:
+        train_model(model, x_train, y_train)
+        rmse, mae, mape, _, _ = validate_model(model, x_val, y_val, scaler)
+        model.save(model_path)
+        logger.info(f"Model for {symbol} trained and saved successfully.")
+        logger.info(f"Metrics for {symbol}: RMSE={rmse}, MAE={mae}, MAPE={mape}")
+    except Exception as e:
+        logger.error(f"Error training model for {symbol}: {str(e)}")
+
+
+
+from auth import User, get_current_user
+@app.post("/predict")
+async def predict_stock(
+    request: Request,
+    stock_request: StockRequest = Depends(),
+    current_user: User = Depends(get_current_user)
+):
     """
-    Render the prediction page with the form to input stock symbol.
+    Handle stock prediction requests.
+    This function serves both API and web form submissions.
+    Only users with a premium subscription can access this feature.
     """
-    return HTMLsites.TemplateResponse("predict.html", {"request": request})
+    if request.headers.get("content-type") == "application/json":
+        # API request
+        symbol = stock_request.symbol.upper()
+    else:
+        # Form submission
+        form_data = await request.form()
+        symbol = form_data.get("symbol", "").upper()
 
+    if current_user.subscription != "premium":
+        raise HTTPException(status_code=403,
+                            detail="Your membership is not premium. Please upgrade to access this feature.")
+
+    try:
+        scaled_data, scaler, _ = preprocess_data(symbol)
+        model_path = f'models/{symbol}_prediction.h5'
+        model = load_model(model_path)
+        predicted_prices = predict_prices(model, scaled_data, scaler, prediction_days=7)
+
+        result = {
+            "symbol": symbol,
+            "predicted_prices": predicted_prices.tolist()
+        }
+
+        if request.headers.get("content-type") == "application/json":
+            # Return JSON for API requests
+            return result
+        else:
+            # Render HTML template for web form submissions
+            return HTMLsites.TemplateResponse("predict_result.html", {"request": request, "result": result})
+
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=f"Model for {symbol} not found. Please train the model first.")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
 
 
 ##############################################################################################################
@@ -292,10 +376,62 @@ from auth import get_current_user  # Import the authentication dependency
 
 from tensorflow.keras.models import load_model
 
+
+
 class StockRequest(BaseModel):
-    """Model representing a request to predict stock prices."""
-    symbol: str
-    userid: str  # Include userid in the request to identify the user
+    symbol: Literal['AAPL', 'GOOGL', 'EURUSD=X', 'GC=F']
+    prediction_days: int = 7  # Default to 7 days, but allow user to specify
+
+class PredictionRequest(BaseModel):
+    prediction_days: int = 7
+
+
+@app.post("/predict/{stocksymbol}")
+async def predict_stock(
+    stocksymbol: Literal['AAPL', 'GOOGL', 'EURUSD=X', 'GC=F'],
+    prediction_request: PredictionRequest,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Handle stock prediction requests for a specific stock symbol.
+    This function serves API requests for stock predictions.
+    Only users with a premium subscription can access this feature.
+    """
+    if current_user.subscription != "premium":
+        raise HTTPException(
+            status_code=403,
+            detail="Your membership is not premium. Please upgrade to access this feature."
+        )
+
+    prediction_days = prediction_request.prediction_days
+
+    try:
+        # Load the pre-trained model
+        model_path = f'models/{stocksymbol}_prediction.h5'
+        model = load_model(model_path)
+
+        # Preprocess the data
+        scaled_data, scaler, _ = preprocess_data(stocksymbol)
+
+        # Make predictions
+        predicted_prices = predict_prices(model, scaled_data, scaler, prediction_days)
+
+        # Convert predictions to a list and round to 2 decimal places
+        predicted_prices_list = [round(float(price), 2) for price in predicted_prices.flatten()]
+
+        # Prepare the response
+        response = {
+            "symbol": stocksymbol,
+            "prediction_days": prediction_days,
+            "predicted_prices": predicted_prices_list
+        }
+
+        return JSONResponse(content=response)
+
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail=f"Model for {stocksymbol} not found")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/process")
@@ -344,65 +480,7 @@ async def train_model_endpoint(stock_request: StockRequest, current_user: dict =
             "metrics": {"RMSE": rmse, "MAE": mae, "MAPE": mape}}
 
 
-@app.get("/predict")
-async def predict_page(request: Request):
-    """
-    Render the prediction page with the form to input stock symbol.
-    """
-    return HTMLsites.TemplateResponse("predict.html", {"request": request})
 
-@app.get("/predict")
-async def predict_page(request: Request):
-    """
-    Render the prediction page with the form to input stock symbol.
-    """
-    return HTMLsites.TemplateResponse("predict.html", {"request": request})
-
-
-@app.post("/predict")
-async def predict_stock(
-    request: Request,
-    stock_request: StockRequest = Depends(),
-    current_user: User = Depends(get_current_user)
-):
-    """
-    Handle stock prediction requests.
-    This function serves both API and web form submissions.
-    Only users with a premium subscription can access this feature.
-    """
-    if request.headers.get("content-type") == "application/json":
-        # API request
-        symbol = stock_request.symbol.upper()
-    else:
-        # Form submission
-        form_data = await request.form()
-        symbol = form_data.get("symbol", "").upper()
-
-    if current_user.subscription != "premium":
-        raise HTTPException(status_code=403,
-                            detail="Your membership is not premium. Please upgrade to access this feature.")
-
-    try:
-        # Assuming these functions are defined elsewhere in your code
-        scaled_data, scaler, _ = preprocess_data(symbol)
-        model_path = f'models/{symbol}_prediction.h5'
-        model = load_model(model_path)
-        predicted_prices = predict_prices(model, scaled_data, scaler, prediction_days=7)
-
-        result = {
-            "symbol": symbol,
-            "predicted_prices": predicted_prices.tolist()
-        }
-
-        if request.headers.get("content-type") == "application/json":
-            # Return JSON for API requests
-            return result
-        else:
-            # Render HTML template for web form submissions
-            return HTMLsites.TemplateResponse("predict_result.html", {"request": request, "result": result})
-
-    except FileNotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e))
 
 
 @app.get("/visualize/{symbol}", response_class=HTMLResponse)

@@ -1,5 +1,16 @@
 import yfinance as yf
+from sklearn.preprocessing import MinMaxScaler
+import pandas as pd
+from datetime import datetime, timedelta
 import numpy as np
+
+from sklearn.preprocessing import MinMaxScaler
+from keras.models import Sequential, load_model
+from keras.layers import LSTM, Dense, Dropout
+from sklearn.metrics import mean_squared_error, mean_absolute_error
+import tensorflow as tf
+tf.get_logger().setLevel('ERROR')
+
 
 def get_daily_stock_prices(symbol, start_date=None, end_date=None, interval='1d'):
     """
@@ -14,14 +25,21 @@ def get_daily_stock_prices(symbol, start_date=None, end_date=None, interval='1d'
     Returns:
     - pd.DataFrame: A DataFrame containing the historical stock prices.
     """
-    # Download historical data from Yahoo Finance
-    stock_data = yf.download(symbol, start=start_date, end=end_date, interval=interval, progress=False)
+    try:
+        stock_data = yf.download(symbol, start=start_date, end=end_date, interval=interval, progress=False)
 
-    # Ensure the DataFrame is returned with a similar format
-    stock_data.reset_index(inplace=True)
-    stock_data.rename(columns={'Open': '1. open'}, inplace=True)
+        if stock_data.empty:
+            raise ValueError(f"No data available for {symbol} between {start_date} and {end_date}")
 
-    return stock_data
+        # Ensure the DataFrame is returned with a similar format
+        stock_data.reset_index(inplace=True)
+        if 'Open' in stock_data.columns and '1. open' not in stock_data.columns:
+            stock_data.rename(columns={'Open': '1. open'}, inplace=True)
+
+        return stock_data
+    except Exception as e:
+        raise ValueError(f"Error fetching data for {symbol}: {str(e)}")
+
 
 
 def prepare_datasets(scaled_data, time_step=60):
@@ -33,6 +51,22 @@ def prepare_datasets(scaled_data, time_step=60):
     x_train = np.reshape(x_train, (x_train.shape[0], x_train.shape[1], 1))
     x_val = np.reshape(x_val, (x_val.shape[0], x_val.shape[1], 1))
     return x_train, y_train, x_val, y_val
+
+
+def create_model(time_step=60):
+    model = Sequential()
+    model.add(LSTM(units=96, return_sequences=True, input_shape=(time_step, 1)))
+    model.add(Dropout(0.2))
+    model.add(LSTM(units=96, return_sequences=True))
+    model.add(Dropout(0.2))
+    model.add(LSTM(units=96))
+    model.add(Dropout(0.2))
+    model.add(Dense(units=1))
+    model.compile(loss='mean_squared_error', optimizer='adam')
+    return model
+
+def train_model(model, x_train, y_train, epochs=50, batch_size=32):
+    model.fit(x_train, y_train, epochs=epochs, batch_size=batch_size)
 
 
 def create_my_dataset(dataset, time_step=50):
@@ -84,12 +118,55 @@ def transform_data(cleaned_data):
         raise RuntimeError(f"Error transforming data: {str(e)}")
 
 
-
-
 def preprocess_data(symbol, start_date=None, end_date=None, interval='1d'):
-    stock_prices_df = get_daily_stock_prices(symbol, start_date=start_date, end_date=end_date, interval=interval)
-    df = stock_prices_df['1. open'].values.reshape(-1, 1)
-    scaler = MinMaxScaler(feature_range=(0, 1))
-    scaled_data = scaler.fit_transform(df)
-    return scaled_data, scaler, stock_prices_df
+    if start_date is None:
+        start_date = (datetime.now() - timedelta(days=60)).strftime('%Y-%m-%d')
+    if end_date is None:
+        end_date = datetime.now().strftime('%Y-%m-%d')
 
+    try:
+        stock_prices_df = get_daily_stock_prices(symbol, start_date=start_date, end_date=end_date, interval=interval)
+
+        if stock_prices_df.empty:
+            raise ValueError(f"No data available for {symbol} between {start_date} and {end_date}")
+
+        if '1. open' not in stock_prices_df.columns:
+            stock_prices_df['1. open'] = stock_prices_df['Open']
+
+        df = stock_prices_df['1. open'].values.reshape(-1, 1)
+        scaler = MinMaxScaler(feature_range=(0, 1))
+        scaled_data = scaler.fit_transform(df)
+        return scaled_data, scaler, stock_prices_df
+    except Exception as e:
+        raise ValueError(f"Error preprocessing data for {symbol}: {str(e)}")
+
+
+def get_daily_stock_prices(symbol, start_date=None, end_date=None, interval='1d'):
+    try:
+        stock_data = yf.download(symbol, start=start_date, end=end_date, interval=interval, progress=False)
+        if stock_data.empty:
+            raise ValueError(f"No data available for {symbol} between {start_date} and {end_date}")
+        return stock_data
+    except Exception as e:
+        raise ValueError(f"Error fetching data for {symbol}: {str(e)}")
+
+
+def validate_model(model, x_val, y_val, scaler):
+    predictions_val = model.predict(x_val)
+    predictions_val = scaler.inverse_transform(predictions_val)
+    y_val = scaler.inverse_transform(y_val.reshape(-1, 1))
+    rmse = np.sqrt(mean_squared_error(y_val, predictions_val))
+    mae = mean_absolute_error(y_val, predictions_val)
+    mape = np.mean(np.abs((y_val - predictions_val) / y_val)) * 100
+    return rmse, mae, mape, predictions_val, y_val
+
+def predict_prices(model, scaled_data, scaler, prediction_days, time_step=60):
+    last_time_step = scaled_data[-time_step:]
+    x_predict = np.reshape(last_time_step, (1, last_time_step.shape[0], 1))
+    predicted_prices = []
+    for _ in range(prediction_days):
+        predicted_price = model.predict(x_predict)
+        predicted_prices.append(predicted_price[0, 0])
+        x_predict = np.append(x_predict[:, 1:, :], np.reshape(predicted_price, (1, 1, 1)), axis=1)
+    predicted_prices = scaler.inverse_transform(np.array(predicted_prices).reshape(-1, 1))
+    return predicted_prices
