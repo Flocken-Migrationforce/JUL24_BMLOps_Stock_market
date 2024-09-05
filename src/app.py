@@ -319,7 +319,7 @@ from pydantic import BaseModel
 
 from models.train import create_model, train_model, validate_model
 from models.predict import predict_prices
-from data.pull import get_daily_stock_prices, create_my_dataset, prepare_datasets, process_data, preprocess_data
+from data.pull import get_daily_stock_prices, create_my_dataset, prepare_datasets, preprocess_data
 from visualization.visualize import generate_visualizations, create_stock_chart
 #
 from auth import get_current_user  # Import the authentication dependency
@@ -513,6 +513,30 @@ def start_prometheus():
         print(f"Failed to start Prometheus: {e}")
 
 
+def run_command(command):
+    process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    stdout, stderr = process.communicate()
+    if process.returncode != 0:
+        print(f"Error executing command: {command}")
+        print(stderr.decode())
+    else:
+        print(stdout.decode())
+
+# Your existing start_prometheus() function remains unchanged
+
+def start_grafana():
+    docker_command = [
+        "docker", "run", "-d",
+        "-p", "3000:3000",
+        "grafana/grafana"
+    ]
+    try:
+        subprocess.run(docker_command, check=True)
+        print("Grafana started successfully")
+    except subprocess.CalledProcessError as e:
+        print(f"Failed to start Grafana: {e}")
+
+
 #######################################################################################
 
 
@@ -535,8 +559,16 @@ if __name__ == "__main__":
     start_prometheus()
     start_grafana_port_forward()
 
-    print("Stock Prediction App started successfully ! Ready for interactions. ")
+    print("Stock Prediction App started successfully! Ready for interactions.")
+    print("Access Prometheus at http://localhost:9090")
+    print("Access Grafana at http://localhost:3000")
 
+    # Keep the main thread running
+    try:
+        while True:
+            sleep(1)
+    except KeyboardInterrupt:
+        print("Shutting down...")
 ##############################################################################################################
 
 
