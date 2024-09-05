@@ -127,8 +127,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from datetime import timedelta
 import csv
 import auth
-from auth import User, Token, get_current_user, authenticate_user, create_access_token, get_password_hash, get_next_user_id, users_db, load_users_from_csv
-
+from auth import User, UserInDB, UserCreate, TokenData, Token, get_current_user, authenticate_user, create_access_token, get_password_hash, get_next_user_id, users_db, load_users_from_csv, add_user_to_csv
 
 # JWT configueration should be kept secret and not in the code
 
@@ -137,10 +136,13 @@ USERS_FILE = "database_users.csv"
 users_db = load_users_from_csv(USERS_FILE)
 
 
+
 @app.post("/token", response_model=Token)
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
+    print(f"Attempting to authenticate user: {form_data.username}")
     user = authenticate_user(form_data.username, form_data.password)
     if not user:
+        print(f"Authentication failed for user: {form_data.username}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
@@ -150,30 +152,33 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
     access_token = create_access_token(
         data={"sub": user.username}, expires_delta=access_token_expires
     )
+    print(f"Authentication successful for user: {form_data.username}")
     return {"access_token": access_token, "token_type": "bearer"}
+
+
+@app.post("/users/", response_model=User)
+async def create_user(user: UserCreate):
+    if user.username in users_db:
+        raise HTTPException(status_code=400, detail="Username already registered")
+    hashed_password = get_password_hash(user.password)
+    new_user = User(
+        key=user.key,
+        userid=get_next_user_id(USERS_FILE),
+        username=user.username,
+        full_name=user.full_name,
+        email=user.email,
+        hashed_password=hashed_password,
+        subscription=user.subscription
+    )
+    add_user_to_csv(USERS_FILE, 'database_passwords.csv', new_user)
+    users_db[new_user.username] = new_user
+    return new_user
+
 
 @app.get("/users/me", response_model=User)
 async def read_users_me(current_user: User = Depends(get_current_user)):
     return current_user
 
-@app.post("/users/", response_model=User)
-async def create_user(user: User):
-    """
-    Create a new user and write it to the file database_users.csv.
-
-    Args:
-        user (User): The user to create.
-
-    Returns:
-        User: The created user.
-"""
-    if user.username in users_db:
-        raise HTTPException(status_code=400, detail="Username already registered")
-    user.userid = get_next_user_id()
-    user.hashed_password = get_password_hash(user.hashed_password)
-    users_db[user.username] = user
-    auth.add_user_to_csv('database_users.csv', user)  # Add user to CSV
-    return user
 
 @app.get("/users/")
 async def get_users(current_user: User = Depends(get_current_user)):

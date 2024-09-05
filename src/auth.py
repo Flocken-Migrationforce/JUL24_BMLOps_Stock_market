@@ -27,14 +27,22 @@ class SubscriptionType(str, Enum):
     BASIC = "basic"
     PREMIUM = "premium"
 
-class User(BaseModel):
-    """Model representing a user in the application."""
-    userid: Optional[int] = None
+class UserBase(BaseModel):
+    key: str
     username: str
     full_name: str
     email: EmailStr
-    hashed_password: str
     subscription: SubscriptionType
+
+class UserCreate(UserBase):
+    password: str
+
+class User(UserBase):
+    userid: int
+    hashed_password: str
+
+class UserInDB(User):
+    hashed_password: str
 
 class Token(BaseModel):
     access_token: str
@@ -72,24 +80,29 @@ users_db: Dict[str, User] = {}
 #     },
 # }
 
+def get_password_hash(password: str) -> str:
+    return pwd_context.hash(password)
 
-def add_user_to_csv(filename: str, user: User):
-    with open(filename, 'a', newline='') as csvfile:
-        fieldnames = ['userid', 'username', 'full_name', 'email', 'hashed_password', 'subscription']
-        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 
-        # If the file is empty, write the header
-        if csvfile.tell() == 0:
-            writer.writeheader()
+def add_user_to_csv(users_filename: str, passwords_filename: str, user: User):
+    # Add user to database_users.csv
+    with open(users_filename, 'a', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow([
+            user.key,
+            user.userid,
+            user.username,
+            user.full_name,
+            user.email,
+            user.hashed_password,
+            user.subscription
+        ])
 
-        writer.writerow({
-            'userid': user.userid,
-            'username': user.username,
-            'full_name': user.full_name,
-            'email': user.email,
-            'hashed_password': user.hashed_password,
-            'subscription': user.subscription
-        })
+    # Add username and unhashed password to database_passwords.csv
+    with open(passwords_filename, 'a', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow([user.username, "password_not_stored"])  # We don't store plain passwords
+
 
 
 def load_users_from_csv(filename: str):
@@ -98,18 +111,25 @@ def load_users_from_csv(filename: str):
         reader = csv.DictReader(csvfile)
         for row in reader:
             try:
+                # Validate subscription type
+                subscription = row['subscription'].lower()
+                if subscription not in ['basic', 'premium']:
+                    subscription = 'basic'  # Default to basic if invalid
+
                 user = User(
-                    userid=int(row['userid']) if row['userid'] != 'None' else None,
+                    key=row['key'],
+                    userid=int(row['userid']),
                     username=row['username'],
                     full_name=row['full_name'],
                     email=row['email'],
                     hashed_password=row['hashed_password'],
-                    subscription=row['subscription']
+                    subscription=subscription
                 )
                 users[row['username']] = user
             except ValueError as e:
-                print(f"Error validating user data: {e}")
+                print(f"Error validating user data for {row.get('username', 'unknown user')}: {e}")
     return users
+
 
 # If you need to maintain a global users_db, you can do this:
 users_db = {}
@@ -146,17 +166,16 @@ def get_password_hash(password):
     return pwd_context.hash(password)
 
 def get_user(username: str):
-    if username in users_db:
-        user_dict = users_db[username].dict()
-        return User(**user_dict)
+    users = load_users_from_csv("database_users.csv")
+    return users.get(username)
 
 def authenticate_user(username: str, password: str):
     user = get_user(username)
     if not user:
-        print(f"User {username} not found.")
+        print(f"User {username} not found")
         return False
     if not verify_password(password, user.hashed_password):
-        print(f"Password for user {username} is incorrect.")
+        print(f"Invalid password for user {username}")
         return False
     return user
 
@@ -189,8 +208,14 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
         raise credentials_exception
     return user
 
-def get_next_user_id():
-    return max([user.userid for user in users_db.values() if user.userid is not None], default=0) + 1
+def get_next_user_id(filename: str) -> int:
+    try:
+        with open(filename, 'r') as csvfile:
+            reader = csv.DictReader(csvfile)
+            user_ids = [int(row['userid']) for row in reader]
+            return max(user_ids) + 1 if user_ids else 1
+    except FileNotFoundError:
+        return 1
 
 # Load users from CSV file
 users_db = load_users_from_csv('database_users.csv')
