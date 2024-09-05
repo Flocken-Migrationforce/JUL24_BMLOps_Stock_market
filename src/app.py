@@ -1,144 +1,94 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from typing import Optional
+import csv
+import pandas as pd
+import secrets
 from main import train_validate_predict
+from typing import Optional
+
 
 app = FastAPI()
 
-# In-memory database for users
-users_db = {}
+# File for storing user data
+users_file = 'users.csv'
 
-# Pydantic model for a User
+# Helper functions to manage CSV data
+def read_users():
+    try:
+        return pd.read_csv(users_file).set_index('name').to_dict(orient='index')
+    except FileNotFoundError:
+        return {}
+
+def write_user(user):
+    with open(users_file, mode='a', newline='') as file:
+        writer = csv.DictWriter(file, fieldnames=['userid', 'name', 'password', 'subscription'])
+        if file.tell() == 0:
+            writer.writeheader()
+        writer.writerow(user)
+
+def authenticate_user(name, password):
+    users = read_users()
+    user = users.get(name)
+    if user and secrets.compare_digest(password, user['password']):
+        return user
+    else:
+        raise HTTPException(status_code=401, detail="Incorrect username or password")
+
+# Pydantic models for requests
 class User(BaseModel):
     """Model representing a user in the application."""
     userid: Optional[int] = None
     name: str
+    password: str
     subscription: str
 
-class StockRequest(BaseModel):
-    """Model representing a request to predict stock prices."""
-    symbol: str
-    userid: int  # Include userid in the request to identify the user
+class TrainRequest(BaseModel):
+    """Model for requesting model training."""
+    symbol: str  # Include the stock symbol
 
-def get_next_user_id():
-    """Helper function to generate the next user ID."""
-    return max(users_db.keys(), default=0) + 1
+class PredictRequest(BaseModel):
+    """Model for requesting stock predictions."""
+    symbol: str
+    name: str
+    password: str
 
 @app.post("/users/")
 def create_user(user: User):
-    """
-    Create a new user with the specified name and subscription.
-    
-    Args:
-        user (User): The user to create.
-    
-    Returns:
-        User: The created user with a unique ID.
-    """
-    user_id = get_next_user_id()
+    """Create a new user with the specified name, password, and subscription."""
+    user_id = len(read_users()) + 1
     user.userid = user_id
-    users_db[user_id] = user
+    user_dict = user.dict()
+    write_user(user_dict)
     return user
 
 @app.get("/users/")
 def get_users():
-    """
-    Retrieve all registered users.
-    
-    Returns:
-        dict: A dictionary of users keyed by user ID.
-    """
-    return users_db
-
-@app.put("/users/{userid}")
-def update_user(userid: int, user: User):
-    """
-    Update the name and subscription type of an existing user.
-    
-    Args:
-        userid (int): The ID of the user to update.
-        user (User): The new user data.
-    
-    Returns:
-        User: The updated user data.
-    """
-    if userid not in users_db:
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    # Update the user with the new data
-    users_db[userid].name = user.name
-    users_db[userid].subscription = user.subscription
-    return users_db[userid]
-
-@app.delete("/users/{userid}")
-def delete_user(userid: int):
-    """
-    Delete a user by ID.
-    
-    Args:
-        userid (int): The ID of the user to delete.
-    
-    Returns:
-        dict: A confirmation message indicating the user was deleted.
-    """
-    if userid not in users_db:
-        raise HTTPException(status_code=404, detail="User not found")
-    del users_db[userid]
-    return {"userid": userid, "deleted": True}
+    """Retrieve all registered users."""
+    return read_users()
 
 @app.post("/train/")
-def train_model(stock_request: StockRequest):
-    """
-    Train a stock prediction model for the specified symbol.
-    
-    Args:
-        stock_request (StockRequest): The stock symbol and user ID for the request.
-    
-    Returns:
-        dict: A message confirming the model was trained and saved.
-    """
-    symbol = stock_request.symbol.upper()
-    if symbol not in ['AAPL', 'GOOGL', 'EURUSD=X', 'GC=F']:
-        raise HTTPException(status_code=400, detail="Unsupported stock symbol")
-
+def train_model(train_request: TrainRequest):
+    """Train a stock prediction model for the specified symbol."""
+    symbol = train_request.symbol.upper()
+    if symbol not in ['AAPL', 'META', 'MSFT', 'GTLB']:
+        raise HTTPException(status_code=400, detail="Unsupported stock symbol. Choose from AAPL, META, MSFT, GTLB.")
     try:
-        # Assuming the last two parameters in `train_validate_predict` are start_date and end_date
         predictions_val, y_val, _ = train_validate_predict(symbol=symbol)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
     return {"message": f"Model for {symbol} trained and saved successfully."}
 
 @app.post("/predict/")
-def predict_stock(stock_request: StockRequest):
-    """
-    Predict stock prices for the specified symbol.
-    
-    Only users with a premium subscription can access this feature.
-    
-    Args:
-        stock_request (StockRequest): The stock symbol and user ID for the request.
-    
-    Returns:
-        dict: The predicted stock prices.
-    
-    Raises:
-        HTTPException: If the user is not premium or if the user or model is not found.
-    """
-    symbol = stock_request.symbol.upper()
-    userid = stock_request.userid
-
-    user = users_db.get(userid)
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    if user.subscription != "premium":
+def predict_stock(predict_request: PredictRequest):
+    """Predict stock prices for the specified symbol and user credentials."""
+    user = authenticate_user(predict_request.name, predict_request.password)
+    if user['subscription'] != 'premium':
         raise HTTPException(status_code=403, detail="Your membership is not premium. Please upgrade to access this feature.")
-
+    symbol = predict_request.symbol.upper()
     try:
         _, _, predicted_prices = train_validate_predict(symbol=symbol)
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
-
     return {
         "symbol": symbol,
         "predicted_prices": predicted_prices.tolist()
