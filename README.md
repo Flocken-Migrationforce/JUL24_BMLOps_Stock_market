@@ -8,6 +8,7 @@ An API will be created and deployed, to allow access to and interaction with int
 Contributors to this project :
 Mir Mehdi Seyedebrahimi https://github.com/mirmehdi
 Fabian Flocken https://github.com/Flocken-Migrationforce
+Leonhard Löffler https://github.com/LeoLoeff
 Florian Wehner
 
 
