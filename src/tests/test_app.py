@@ -1,7 +1,7 @@
 import pytest
 from fastapi.testclient import TestClient
-from app import app, USERS_FILE, load_users_from_file, write_user_to_file, verify_password, create_access_token, get_user, authenticate_user, get_current_user
-from auth import User, pwd_context
+from app import app, USERS_FILE, load_users_from_csv, write_user_to_file, create_access_token, authenticate_user, get_current_user
+from auth import verify_password, authenticate_user, get_current_user 
 from datetime import timedelta
 
 client = TestClient(app)
@@ -96,12 +96,6 @@ def test_verify_password():
     password = "testpassword"
     hashed_password = pwd_context.hash(password)
     assert verify_password(password, hashed_password) is True
-
-def test_get_user():
-    users_db = load_users_from_file(USERS_FILE)
-    user = get_user(users_db, "testuser")
-    assert isinstance(user, UserInDB)
-    assert user.username == "testuser"
 
 def test_authenticate_user_function():
     users_db = load_users_from_file(USERS_FILE)

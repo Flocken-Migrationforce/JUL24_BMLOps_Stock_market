@@ -213,6 +213,28 @@ async def delete_user(username: str, current_user: User = Depends(get_current_us
 
     return {"username": user.username, "subscription": user.subscription}
 
+# writes the user's information to the CSV file database_users.csv
+def write_user_to_file(user):
+    """
+    Write user information to the database_users.csv file.
+
+    Args:
+        user (User): The user object containing user information.
+    """
+    USERS_FILE = "database_users.csv"
+    with open(USERS_FILE, 'a', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow([
+            user.username,  # 'key' in CSV
+            user.userid,
+            user.username,
+            user.full_name,
+            user.email,
+            user.hashed_password,
+            user.subscription
+        ])
+
+
 
 ##############################################################################################################
 
