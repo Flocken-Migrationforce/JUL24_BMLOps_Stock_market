@@ -359,80 +359,31 @@ def write_user_to_file(user):
 
 
 ##############################################################################################################
+###############################################################################################################
 # DATA AND ML MODEL
 ##############################################################################################################
 
-
 from fastapi import FastAPI, HTTPException, Request, Depends
-import httpx # to connect jobs between FastAPI instances
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
+import httpx  # to connect jobs between FastAPI instances
 from pydantic import BaseModel
 
 from models.train import create_model, train_model, validate_model
 from models.predict import predict_prices
 from data.pull import get_daily_stock_prices, create_my_dataset, prepare_datasets, process_data, preprocess_data
 from visualization.visualize import generate_visualizations, create_stock_chart
-#
 from auth import get_current_user  # Import the authentication dependency
 
 from tensorflow.keras.models import load_model
 
-
+app = FastAPI()
+templates = Jinja2Templates(directory="templates")  # Ensure your templates are in the 'templates' directory
 
 class StockRequest(BaseModel):
-    symbol: Literal['AAPL', 'GOOGL', 'EURUSD=X', 'GC=F']
-    prediction_days: int = 7  # Default to 7 days, but allow user to specify
-
-class PredictionRequest(BaseModel):
-    prediction_days: int = 7
-
-
-@app.post("/predict/{stocksymbol}")
-async def predict_stock(
-    stocksymbol: Literal['AAPL', 'GOOGL', 'EURUSD=X', 'GC=F'],
-    prediction_request: PredictionRequest,
-    current_user: User = Depends(get_current_user)
-):
-    """
-    Handle stock prediction requests for a specific stock symbol.
-    This function serves API requests for stock predictions.
-    Only users with a premium subscription can access this feature.
-    """
-    if current_user.subscription != "premium":
-        raise HTTPException(
-            status_code=403,
-            detail="Your membership is not premium. Please upgrade to access this feature."
-        )
-
-    prediction_days = prediction_request.prediction_days
-
-    try:
-        # Load the pre-trained model
-        model_path = f'models/{stocksymbol}_prediction.h5'
-        model = load_model(model_path)
-
-        # Preprocess the data
-        scaled_data, scaler, _ = preprocess_data(stocksymbol)
-
-        # Make predictions
-        predicted_prices = predict_prices(model, scaled_data, scaler, prediction_days)
-
-        # Convert predictions to a list and round to 2 decimal places
-        predicted_prices_list = [round(float(price), 2) for price in predicted_prices.flatten()]
-
-        # Prepare the response
-        response = {
-            "symbol": stocksymbol,
-            "prediction_days": prediction_days,
-            "predicted_prices": predicted_prices_list
-        }
-
-        return JSONResponse(content=response)
-
-    except FileNotFoundError:
-        raise HTTPException(status_code=404, detail=f"Model for {stocksymbol} not found")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
+    """Model representing a request to predict stock prices."""
+    symbol: str
+    userid: str  # Include userid in the request to identify the user
 
 @app.post("/process")
 async def process(request: Request):
@@ -447,7 +398,6 @@ async def process(request: Request):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
 @app.post("/train/")
 async def train_model_endpoint(stock_request: StockRequest, current_user: dict = Depends(get_current_user)):
     """
@@ -455,12 +405,11 @@ async def train_model_endpoint(stock_request: StockRequest, current_user: dict =
 
     Args:
         stock_request (StockRequest): The stock symbol and user ID for the request.
-        current_user (dict): The authticated user data (automatically injected by Depends).
+        current_user (dict): The authenticated user data (automatically injected by Depends).
 
     Returns:
         dict: A message confirming the model was trained and saved.
     """
-
     symbol = stock_request.symbol.upper()
     if symbol not in ['AAPL', 'GOOGL', 'EURUSD=X', 'GC=F']:
         raise HTTPException(status_code=400, detail="Unsupported stock symbol")
@@ -479,9 +428,58 @@ async def train_model_endpoint(stock_request: StockRequest, current_user: dict =
     return {"message": f"Model for {symbol} trained and saved successfully.",
             "metrics": {"RMSE": rmse, "MAE": mae, "MAPE": mape}}
 
+@app.get("/predict", response_class=HTMLResponse)
+async def predict_page(request: Request):
+    """
+    Render the prediction page with the form to input stock symbol.
+    """
+    return templates.TemplateResponse("predict.html", {"request": request})
 
+@app.post("/predict")
+async def predict_stock(
+    request: Request,
+    stock_request: StockRequest = Depends(),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Handle stock prediction requests.
+    This function serves both API and web form submissions.
+    Only users with a premium subscription can access this feature.
+    """
+    if request.headers.get("content-type") == "application/json":
+        # API request
+        symbol = stock_request.symbol.upper()
+    else:
+        # Form submission
+        form_data = await request.form()
+        symbol = form_data.get("symbol", "").upper()
 
+    if current_user.get("subscription") != "premium":
+        raise HTTPException(status_code=403,
+                            detail="Your membership is not premium. Please upgrade to access this feature.")
 
+    try:
+        scaled_data, scaler, _ = preprocess_data(symbol)
+        model_path = f'models/{symbol}_prediction.h5'
+        model = load_model(model_path)
+        predicted_prices = predict_prices(model, scaled_data, scaler, prediction_days=7)
+
+        result = {
+            "symbol": symbol,
+            "predicted_prices": predicted_prices.tolist()
+        }
+
+        if request.headers.get("content-type") == "application/json":
+            # Return JSON for API requests
+            return result
+        else:
+            # Render HTML template for web form submissions
+            return templates.TemplateResponse("predict_result.html", {"request": request, "result": result})
+
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/visualize/{symbol}", response_class=HTMLResponse)
 async def visualize_stock(request: Request, symbol: str, days: int = 7):
@@ -492,7 +490,7 @@ async def visualize_stock(request: Request, symbol: str, days: int = 7):
         predicted_prices = predict_prices(model, scaled_data, scaler, prediction_days=days)
         chart_image = create_stock_chart(stock_prices_df, predicted_prices, symbol)
 
-        return HTMLsites.TemplateResponse("stock_visualization.html", {
+        return templates.TemplateResponse("stock_visualization.html", {
             "request": request,
             "symbol": symbol,
             "chart_image": chart_image,
@@ -500,70 +498,6 @@ async def visualize_stock(request: Request, symbol: str, days: int = 7):
         })
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-#######################################################################################
-## Functions for Monitoring with Prometheus and Grafana and Alertmanager:
-#######################################################################################
-import subprocess
-
-def start_grafana_port_forward():
-    try:
-        process = subprocess.Popen(
-            ["kubectl", "port-forward", "service/grafana", "3000:80"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE
-        )
-        print("Started port-forwarding for Grafana on port 3000.")
-        return process
-    except Exception as e:
-        print(f"Failed to start port-forwarding: {e}")
-        return None
-
-
-'''
-def start_prometheus():
-    try:
-        # Start Prometheus using subprocess
-        subprocess.Popen(
-            ["./prometheus.exe", "--config.file=prometheus.yml"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            shell=True
-        )
-        print("Prometheus has started successfully.")
-    except Exception as e:
-        print(f"Failed to start Prometheus: {e}")
-        '''
-
-
-def start_prometheus():
-    # Get the current script's directory
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-
-    # Construct the path to prometheus.yml
-    prometheus_yml_path = os.path.join(current_dir, 'monitoring', 'prometheus.yml')
-
-    # Ensure the path is absolute
-    prometheus_yml_path = os.path.abspath(prometheus_yml_path)
-
-    # Docker command to run Prometheus
-    docker_command = [
-        "docker", "run", "-d",  # Run in detached mode
-        "-p", "9090:9090",
-        "-v", f"{prometheus_yml_path}:/monitoring/prometheus.yml",
-        "prom/prometheus"
-    ]
-
-    try:
-        subprocess.run(docker_command, check=True)
-        print("Prometheus started successfully")
-    except subprocess.CalledProcessError as e:
-        print(f"Failed to start Prometheus: {e}")
-
-
-#######################################################################################
-
-
 
 
 ##############################################################################################################
