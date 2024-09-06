@@ -545,32 +545,33 @@ def start_grafana():
 ##############################################################################################################
 ##############################################################################################################
 
-
+'''stopit2409061518Fabian
 # Function to start each FastAPI instance
 if __name__ == "__main__":
     print("Starting the Stock Prediction App ...")
-    import init
+    # import init
     import uvicorn
     uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)
-
-    from time import sleep
-    sleep(5)  # Give the app some time to start
-    # start monitoring Prometheus & Grafana & Alertmanager :
-    start_prometheus()
-    start_grafana_port_forward()
-
-    print("Stock Prediction App started successfully! Ready for interactions.")
-    print("Access Prometheus at http://localhost:9090")
-    print("Access Grafana at http://localhost:3000")
-
-    # Keep the main thread running
-    try:
-        while True:
-            sleep(1)
-    except KeyboardInterrupt:
-        print("Shutting down...")
+    #
+    # from time import sleep
+    # sleep(5)  # Give the app some time to start
+    # # start monitoring Prometheus & Grafana & Alertmanager :
+    # start_prometheus()
+    # start_grafana_port_forward()
+    #
+    # print("Stock Prediction App started successfully! Ready for interactions.")
+    # print("Access Prometheus at http://localhost:9090")
+    # print("Access Grafana at http://localhost:3000")
+    #
+    # # Keep the main thread running
+    # try:
+    #     while True:
+    #         sleep(1)
+    # except KeyboardInterrupt:
+    #     print("Shutting down...")
 ##############################################################################################################
 
+'''
 
 # Shutdown logging
 @app.on_event("shutdown")

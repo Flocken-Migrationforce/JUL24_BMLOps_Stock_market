@@ -1,0 +1,4 @@
+nodeExporter:
+  extraArgs:
+    - --path.rootfs=/host
+  hostRootfs: false

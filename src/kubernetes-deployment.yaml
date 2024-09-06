@@ -15,7 +15,9 @@ spec:
     spec:
       containers:
       - name: stock-prediction
-        image: ${YOUR_DOCKER_USERNAME}/stock-prediction-app:latest
+        image: stock-prediction-app:latest # take local image for Kubernetes, saves time
+#        image: ${YOUR_DOCKER_USERNAME}/stock-prediction-app:latest
+        imagePullPolicy: Never # to use locally
         ports:
         - containerPort: 8000
 ---
@@ -31,6 +33,19 @@ spec:
       port: 80
       targetPort: 8000
   type: LoadBalancer
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: stock-prediction-service
+spec:
+  type: NodePort
+  ports:
+  - port: 8000
+    targetPort: 8000
+    nodePort: 30000
+  selector:
+    app: stock-prediction-app
 ---
 # Prometheus
 apiVersion: apps/v1

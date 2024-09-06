@@ -112,3 +112,6 @@ target/
 /src/monitoring/promtool.exe
 /src/monitoring/LICENSE
 /src/monitoring/NOTICE
+src/requirements_-0.txt
+src/requirements_-1.txt
+requirements.in
