@@ -12,4 +12,6 @@ python-dotenv
 passlib[bcrypt]
 pyjwt
 yfinance
+apache-airflow==2.5.0
+
 
