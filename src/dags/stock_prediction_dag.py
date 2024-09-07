@@ -1,16 +1,19 @@
-# dags/stock_prediction_dag.py
-
+from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.operators.python_operator import PythonOperator
-from datetime import datetime, timedelta
-from model import preprocess_data, prepare_datasets, create_model, train_model, validate_model, predict_prices
-import os
+import numpy as np
+import pandas as pd
+from sklearn.preprocessing import MinMaxScaler
 from keras.models import Sequential, load_model
+from keras.layers import LSTM, Dense, Dropout
+from sklearn.metrics import mean_squared_error, mean_absolute_error
+import yfinance as yf
 
 default_args = {
     'owner': 'airflow',
     'depends_on_past': False,
-    'start_date': datetime(2024, 8, 23),
+    'start_date': datetime(2024, 9, 9),
+    'email': ['your_email@example.com'],
     'email_on_failure': False,
     'email_on_retry': False,
     'retries': 1,
@@ -18,56 +21,57 @@ default_args = {
 }
 
 dag = DAG(
-    'stock_prediction',
+    'train_aapl_model_daily',
     default_args=default_args,
-    description='A DAG for stock price prediction',
-    schedule_interval=timedelta(days=1),
+    description='Train AAPL model every morning',
+    schedule_interval='0 6 * * *',  # At 06:00 every morning
+    catchup=False
 )
 
-def preprocess_and_prepare_data(**kwargs):
-    symbol = kwargs['dag_run'].conf.get('symbol', 'GOOGL')
-    scaled_data, scaler, stock_prices_df = preprocess_data(symbol)
-    x_train, y_train, x_val, y_val = prepare_datasets(scaled_data)
-    kwargs['ti'].xcom_push(key='preprocessed_data', value=(scaled_data, scaler, x_train, y_train, x_val, y_val))
+def get_daily_stock_prices(symbol, start_date=None, end_date=None, interval='1d'):
+    """ Fetch historical stock data from Yahoo Finance. """
+    stock_data = yf.download(symbol, start=start_date, end=end_date, interval=interval, progress=False)
+    stock_data.reset_index(inplace=True)
+    stock_data.rename(columns={'Open': '1. open'}, inplace=True)
+    return stock_data
 
-def train_and_validate_model(**kwargs):
-    symbol = kwargs['dag_run'].conf.get('symbol', 'GOOGL')
-    scaled_data, scaler, x_train, y_train, x_val, y_val = kwargs['ti'].xcom_pull(key='preprocessed_data', task_ids='preprocess_task')
-    model = create_model()
-    train_model(model, x_train, y_train)
-    rmse, mae, mape, predictions_val, y_val = validate_model(model, x_val, y_val, scaler)
-    model_path = f'models/{symbol}_prediction.h5'
-    model.save(model_path)
-    kwargs['ti'].xcom_push(key='metrics', value=(rmse, mae, mape))
+def create_my_dataset(dataset, time_step=60):
+    x, y = [], []
+    for i in range(time_step, len(dataset)):
+        x.append(dataset[i-time_step:i, 0])
+        y.append(dataset[i, 0])
+    return np.array(x), np.array(y)
 
-def make_predictions(**kwargs):
-    symbol = kwargs['dag_run'].conf.get('symbol', 'GOOGL')
-    prediction_days = kwargs['dag_run'].conf.get('prediction_days', 7)
-    scaled_data, scaler, _, _, _, _ = kwargs['ti'].xcom_pull(key='preprocessed_data', task_ids='preprocess_task')
-    model_path = f'models/{symbol}_prediction.h5'
-    model = load_model(model_path)
-    predicted_prices = predict_prices(model, scaled_data, scaler, prediction_days)
-    kwargs['ti'].xcom_push(key='predictions', value=predicted_prices.tolist())
+def create_model(time_step=60):
+    model = Sequential([
+        LSTM(units=96, return_sequences=True, input_shape=(time_step, 1)),
+        Dropout(0.2),
+        LSTM(units=96, return_sequences=True),
+        Dropout(0.2),
+        LSTM(units=96),
+        Dropout(0.2),
+        Dense(units=1)
+    ])
+    model.compile(loss='mean_squared_error', optimizer='adam')
+    return model
 
-preprocess_task = PythonOperator(
-    task_id='preprocess_task',
-    python_callable=preprocess_and_prepare_data,
-    provide_context=True,
-    dag=dag,
+def train_aapl():
+    symbol = 'AAPL'
+    stock_prices_df = get_daily_stock_prices(symbol)
+    df = stock_prices_df['1. open'].values.reshape(-1, 1)
+    scaler = MinMaxScaler(feature_range=(0, 1))
+    scaled_data = scaler.fit_transform(df)
+    x_train, y_train, x_val, y_val = create_my_dataset(scaled_data, time_step=60)
+    model = create_model(time_step=60)
+    model.fit(x_train, y_train, epochs=50, batch_size=32)
+    predictions_val = model.predict(x_val)
+    predictions_val = scaler.inverse_transform(predictions_val)
+    y_val = scaler.inverse_transform(y_val.reshape(-1, 1))
+    rmse = np.sqrt(mean_squared_error(y_val, predictions_val))
+    print(f'Training completed with RMSE: {rmse}')
+
+train_aapl_task = PythonOperator(
+    task_id='train_aapl_model',
+    python_callable=train_aapl,
+    dag=dag
 )
-
-train_validate_task = PythonOperator(
-    task_id='train_validate_task',
-    python_callable=train_and_validate_model,
-    provide_context=True,
-    dag=dag,
-)
-
-predict_task = PythonOperator(
-    task_id='predict_task',
-    python_callable=make_predictions,
-    provide_context=True,
-    dag=dag,
-)
-
-preprocess_task >> train_validate_task >> predict_task
