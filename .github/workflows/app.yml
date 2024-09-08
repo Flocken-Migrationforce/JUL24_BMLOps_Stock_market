@@ -1,0 +1,46 @@
+name: FastAPI Application CI/CD
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'src/app.py'
+      - 'requirements.txt'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'src/app.py'
+      - 'requirements.txt'
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.8'
+    - name: Install dependencies
+      run: |
+        pip install -r requirements.txt
+    - name: Lint with Flake8
+      run: |
+        pip install flake8
+        flake8 src/app.py
+    - name: Test with pytest
+      run: |
+        pip install pytest
+        pytest
+
+  deploy:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up kubectl
+      run: # Setup commands for kubectl or use a GitHub Action to configure
+    - name: Deploy to Kubernetes
+      run: kubectl apply -f src/kubernetes-deployment.yaml
