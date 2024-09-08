@@ -3,8 +3,12 @@ name: Python CI/CD Workflow
 on:
   push:
     branches: [ main, master ]
+    paths:
+      - 'src/**'  # This will trigger the workflow only when files in the src folder changed.
   pull_request:
     branches: [ main, master ]
+    paths:
+      - 'src/**'  # This will trigger the workflow only when files in the src folder changed.
 
 jobs:
   test:
@@ -41,3 +45,10 @@ jobs:
     - name: Retrain model
       run: |
         python src/models/train_CICD.py  
+script
+      - name: Commit and push if changed
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add -A
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Retrain model" && git push)
