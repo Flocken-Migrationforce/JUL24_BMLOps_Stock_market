@@ -1,0 +1,26 @@
+# Use the official Airflow image as a parent image
+FROM apache/airflow:2.1.4
+
+# Set the working directory in the container
+WORKDIR /opt/airflow
+
+# Install any additional dependencies you need
+USER root
+RUN apt-get update && apt-get install -y \
+        libpq-dev \
+        gcc \
+        libc6-dev \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy the entrypoint script into the container
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+# Switch back to airflow user to run the application
+USER airflow
+
+# Set the default command to execute
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["webserver"]
+

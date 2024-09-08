@@ -62,10 +62,10 @@ def create_my_dataset(dataset, time_step=50):
 
 
 def preprocess_data(symbol, start_date=None, end_date=None, interval='1d'):
-    if start_date is None:
-        start_date = (datetime.now() - timedelta(days=60)).strftime('%Y-%m-%d')
     if end_date is None:
         end_date = datetime.now().strftime('%Y-%m-%d')
+    start_date = (datetime.strptime(end_date, '%Y-%m-%d') - timedelta(days=1000)).strftime('%Y-%m-%d')
+    
     stock_prices_df = get_daily_stock_prices(symbol, start_date=start_date, end_date=end_date, interval=interval)
     if '1. open' not in stock_prices_df.columns:
         stock_prices_df['1. open'] = stock_prices_df['Open']
@@ -98,16 +98,17 @@ def predict_prices(model, scaled_data, scaler, prediction_days, time_step=60):
     predicted_prices = scaler.inverse_transform(np.array(predicted_prices).reshape(-1, 1))
     return predicted_prices
 
-if __name__ == '__main__':
-    # test_yf_download('AAPL')
-    downloaddata = get_daily_stock_prices('AAPL')
-    scaled_data, _, _ = preprocess_data('AAPL')
-    prepare_datasets(scaled_data)
+# if __name__ == '__main__':
+#     # test_yf_download('AAPL')
+#     downloaddata = get_daily_stock_prices('AAPL')
+    
+#     scaled_data, _, _ = preprocess_data('AAPL')
+#     prepare_datasets(scaled_data)
 
-    print("wait")
-    model = create_model()
-    train_model(model, x_train, y_train)
-    rmse, mae, mape, _, _ = validate_model(model, x_val, y_val, scaler)
-    model_path = f'models/AAPL_prediction.h5'
-    model.save(model_path)
-    print("wait")
+#     print("wait")
+#     model = create_model()
+#     train_model(model, x_train, y_train)
+#     rmse, mae, mape, _, _ = validate_model(model, x_val, y_val, scaler)
+#     model_path = f'models/AAPL_prediction.h5'
+#     model.save(model_path)
+#     print("wait")

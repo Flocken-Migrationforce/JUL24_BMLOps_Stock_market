@@ -3,8 +3,19 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 import os
 import sys
-
+import logging
 from starlette.responses import JSONResponse
+from pydantic import BaseModel
+from typing import Literal
+import mlflow
+from mlflow import log_metric, log_param, log_artifact
+from tensorflow.keras.models import load_model
+
+from auth import authenticate_user, create_access_token, get_current_user
+from data.pull import preprocess_data, prepare_datasets
+from models.train import create_model, train_model, validate_model
+import threading
+
 
 ## Set working directory for this script
 # # allows to run "python src/app.py and put src as the working directory, so that all normally works.
@@ -22,6 +33,13 @@ from prometheus_fastapi_instrumentator import Instrumentator # for premetheus
 
 app = FastAPI()
 DATA_MODEL_URL = "localhost:8000"
+# MLflow: Set the MLflow tracking URI and experiment name
+MLFLOW_TRACKING_URI = "http://localhost:8082"
+mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
+mlflow.set_experiment("Stock Prediction LSTM")
+# Path configurations for storing models
+MODEL_DIR = "models"
+
 
 # Instrumentation
 Instrumentator().instrument(app).expose(app)  # to be exposed in prometheus 
@@ -104,11 +122,6 @@ async def home(request: Request):
 
 from pydantic import BaseModel
 
-class StockRequest(BaseModel):
-    """Model representing a request to predict stock prices."""
-    symbol: str
-    userid: int  # Include userid in the request to identify the user
-
 from typing import Literal
 
 class StockRequest(BaseModel):
@@ -118,34 +131,35 @@ class StockRequest(BaseModel):
 async def train_model_endpoint(stock_request: StockRequest):
     symbol = stock_request.symbol.upper()
     if symbol not in ['AAPL', 'GOOGL', 'EURUSD=X', 'GC=F']:
-        raise HTTPException(status_code=400, detail="Unsupported stock symbol. Predictions are currently only" \
-                                                    "allowed for AAPL, GOOGL, EURUSD=X and GC=F.")
+        raise HTTPException(status_code=400, detail="Unsupported stock symbol")
 
-    try:
-        scaled_data, scaler, _ = preprocess_data(symbol)
-        x_train, y_train, x_val, y_val = prepare_datasets(scaled_data)
-        model = create_model()
-        train_model(model, x_train, y_train)
-        rmse, mae, mape, _, _ = validate_model(model, x_val, y_val, scaler)
-        model_path = f'models/{symbol}_prediction.h5'
-        model.save(model_path)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    with mlflow.start_run():  # MLflow: Start a new MLflow run for tracking
+        try:
+            # MLflow: Log the symbol as a parameter
+            log_param("symbol", symbol)
+
+            scaled_data, scaler, _ = preprocess_data(symbol)
+            x_train, y_train, x_val, y_val = prepare_datasets(scaled_data)
+            model = create_model()
+            train_model(model, x_train, y_train)
+            rmse, mae, mape, _, _ = validate_model(model, x_val, y_val, scaler)
+
+            # MLflow: Log performance metrics
+            log_metric("RMSE", rmse)
+            log_metric("MAE", mae)
+            log_metric("MAPE", mape)
+
+            # MLflow: Save the model and log as an artifact
+            model_path = os.path.join(MODEL_DIR, f"{symbol}_prediction.h5")
+            model.save(model_path)
+            log_artifact(model_path)
+
+        except Exception as e:
+            mlflow.end_run(status='FAILED')  # MLflow: Mark the run as failed in case of exception
+            raise HTTPException(status_code=500, detail=str(e))
 
     return {"message": f"Model for {symbol} trained and saved successfully.",
             "metrics": {"RMSE": rmse, "MAE": mae, "MAPE": mape}}
-
-
-def train_and_save_model(model, x_train, y_train, x_val, y_val, scaler, symbol, model_path):
-    try:
-        train_model(model, x_train, y_train)
-        rmse, mae, mape, _, _ = validate_model(model, x_val, y_val, scaler)
-        model.save(model_path)
-        logger.info(f"Model for {symbol} trained and saved successfully.")
-        logger.info(f"Metrics for {symbol}: RMSE={rmse}, MAE={mae}, MAPE={mape}")
-    except Exception as e:
-        logger.error(f"Error training model for {symbol}: {str(e)}")
-
 
 
 ##############################################################################################################
@@ -458,59 +472,55 @@ async def visualize_stock(request: Request, symbol: str, days: int = 7):
 #######################################################################################
 import subprocess
 
+
+def run_uvicorn():
+    uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)
+
+def start_prometheus():
+    try:
+        subprocess.Popen(
+            ["prometheus", "--config.file=./monitoring/prometheus.yml"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+        print("Prometheus has started successfully.")
+    except Exception as e:
+        print(f"Failed to start Prometheus: {e}")
+
 def start_grafana_port_forward():
     try:
-        process = subprocess.Popen(
+        subprocess.Popen(
             ["kubectl", "port-forward", "service/grafana", "3000:80"],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE
         )
         print("Started port-forwarding for Grafana on port 3000.")
-        return process
     except Exception as e:
         print(f"Failed to start port-forwarding: {e}")
-        return None
 
+# def start_prometheus():
+#     # Get the current script's directory
+#     current_dir = os.path.dirname(os.path.abspath(__file__))
 
-'''
-def start_prometheus():
-    try:
-        # Start Prometheus using subprocess
-        subprocess.Popen(
-            ["./prometheus.exe", "--config.file=prometheus.yml"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            shell=True
-        )
-        print("Prometheus has started successfully.")
-    except Exception as e:
-        print(f"Failed to start Prometheus: {e}")
-        '''
+#     # Construct the path to prometheus.yml
+#     prometheus_yml_path = os.path.join(current_dir, 'monitoring', 'prometheus.yml')
 
+#     # Ensure the path is absolute
+#     prometheus_yml_path = os.path.abspath(prometheus_yml_path)
 
-def start_prometheus():
-    # Get the current script's directory
-    current_dir = os.path.dirname(os.path.abspath(__file__))
+#     # Docker command to run Prometheus
+#     docker_command = [
+#         "docker", "run", "-d",  # Run in detached mode
+#         "-p", "9090:9090",
+#         "-v", f"{prometheus_yml_path}:/monitoring/prometheus.yml",
+#         "prom/prometheus"
+#     ]
 
-    # Construct the path to prometheus.yml
-    prometheus_yml_path = os.path.join(current_dir, 'monitoring', 'prometheus.yml')
-
-    # Ensure the path is absolute
-    prometheus_yml_path = os.path.abspath(prometheus_yml_path)
-
-    # Docker command to run Prometheus
-    docker_command = [
-        "docker", "run", "-d",  # Run in detached mode
-        "-p", "9090:9090",
-        "-v", f"{prometheus_yml_path}:/monitoring/prometheus.yml",
-        "prom/prometheus"
-    ]
-
-    try:
-        subprocess.run(docker_command, check=True)
-        print("Prometheus started successfully")
-    except subprocess.CalledProcessError as e:
-        print(f"Failed to start Prometheus: {e}")
+#     try:
+#         subprocess.run(docker_command, check=True)
+#         print("Prometheus started successfully")
+#     except subprocess.CalledProcessError as e:
+#         print(f"Failed to start Prometheus: {e}")
 
 
 def run_command(command):
@@ -544,25 +554,23 @@ def start_grafana():
 
 ##############################################################################################################
 ##############################################################################################################
-
-'''stopit2409061518Fabian
-# Function to start each FastAPI instance
 if __name__ == "__main__":
-    print("Starting the Stock Prediction App ...")
-    # import init
-    import uvicorn
-    uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)
-    #
-    # from time import sleep
-    # sleep(5)  # Give the app some time to start
-    # # start monitoring Prometheus & Grafana & Alertmanager :
-    # start_prometheus()
-    # start_grafana_port_forward()
-    #
-    # print("Stock Prediction App started successfully! Ready for interactions.")
-    # print("Access Prometheus at http://localhost:9090")
-    # print("Access Grafana at http://localhost:3000")
-    #
+    # Start Uvicorn in a separate thread
+    uvicorn_thread = threading.Thread(target=run_uvicorn)
+    uvicorn_thread.start()
+
+    # Sleep is not necessary unless there's a specific reason for a delay
+    sleep(5)  # This can be adjusted or removed based on your needs
+
+    # Start monitoring tools
+    start_prometheus()
+    start_grafana_port_forward()
+
+    print("Stock Prediction App started successfully!")
+    print("Access Prometheus at http://localhost:9090")
+    print("Access Grafana at http://localhost:3000")
+
+    uvicorn_thread.join() 
     # # Keep the main thread running
     # try:
     #     while True:
@@ -570,9 +578,6 @@ if __name__ == "__main__":
     # except KeyboardInterrupt:
     #     print("Shutting down...")
 ##############################################################################################################
-
-'''
-
 # Shutdown logging
 @app.on_event("shutdown")
 def shutdown_event():
