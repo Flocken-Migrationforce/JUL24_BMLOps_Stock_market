@@ -18,22 +18,18 @@ We are Machine Learning Engineers :
 In this project, we developed a MLOps solution to deploy, monitor and update a self-built LSTM model, using Neural Networks to predict stock market prices of famous Tech companies.
 
 ## Table of Contents
-1. [Project Overview](reports/project_overview.md)
-2. [Data Collection](reports/data_collection.md)
-3. [Data Preprocessing](reports/data_preprocessing.md)
-4. [Exploratory Data Analysis](notebooks/eda.ipynb)
-5. [Model Selection](reports/model_selection.md)
-6. [Model Training](reports/model_training.md)
-7. [Model Evaluation](reports/model_evaluation.md)
-8. [Deployment](reports/deployment.md)
-9. [Monitoring and Maintenance](reports/monitoring_and_maintenance.md)
+1. [📈 Introduction and Target](#-introduction-and-target)
+2. [Project Organization](#project-organization)
+3. [🎬 Getting Started for Developers](#-getting-started-for-developers)
+   - [Set up the app](#set-up-the-app)
+   - [Use the app](#use-the-app)
+4. [Airflow Scheduling Usage](#airflow-scheduling-usage)
+5. [MLflow](#mlflow)
+6. [Prometheus](#prometheus)
+7. [Grafana](#grafana)
+8. [Disclaimer](#disclaimer)
 
-
-
---unspecific Template content below--
-<LEO>
-Project Organization
-------------
+## Project Organization
 
     ├── LICENSE
     ├── README.md          <- The top-level README for developers using this project.
@@ -81,23 +77,6 @@ Project Organization
 
 <p><small>Project based on the <a target="_blank" href="https://drivendata.github.io/cookiecutter-data-science/">cookiecutter data science project template</a>. #cookiecutterdatascience</small></p>
 
-
-# Stock Market Prediction Project
-
-This project aims to develop an AI/ML model to predict stock market prices and trends.
-
-## Table of Contents
-1. [Project Overview](reports/project_overview.md)
-2. [Data Collection](reports/data_collection.md)
-3. [Data Preprocessing](reports/data_preprocessing.md)
-4. [Exploratory Data Analysis](notebooks/eda.ipynb)
-5. [Model Selection](reports/model_selection.md)
-6. [Model Training](reports/model_training.md)
-7. [Model Evaluation](reports/model_evaluation.md)
-8. [Deployment](reports/deployment.md)
-9. [Monitoring and Maintenance](reports/monitoring_and_maintenance.md)
-
-
 ## 🎬 Getting Started for Developers
 
 ### 🗃️ **Set up the app** 
@@ -137,7 +116,7 @@ curl http://localhost:8000/docs
 ```
 Visit http://localhost:8000/docs to easily create a new user, set a password, and choose between premium or basic subscription plans. You can also update user information at any time. Please ensure you log in with the correct credentials and provide a valid stock symbol (e.g., AAPL) when using the training feature. Note that only premium subscribers have access to stock market predictions."
 
-## Airflow Schaduling Usage
+## Airflow Scheduling Usage
 Note that the airflow creation here is defined in mac os. It could be different for other os systems. 
 
 1. install apache-airflow
