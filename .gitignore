@@ -128,3 +128,6 @@ requirements.in
 /src/monitoring/prometheus_-2.yml
 src/kubernetes-deployment_-2.yaml
 src/monitoring/prometheus_-3.yml
+src/monitoring/prometheus_-5.yml
+src/monitoring/prometheus_-4.yml
+src/port-forwarding-K8s-to-localhost.py
