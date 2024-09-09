@@ -159,6 +159,14 @@ Note that the airflow creation here is defined in mac os. It could be different 
    airflow scheduler 
 ```
 
+### Test: 
+then you can go to UI in poer **:8081** and search for ID **train_aapl_model_daily**. You can start the scheduled training everyday at 9:00 AM. Note that airflow should be run in background all the time. 
+or you can use the command below in src/airflow/dags/ PATH to test: 
+
+```Shell
+    python -c "from stock_prediction_dag import train_aapl; train_aapl()"
+```
+
 ## MLflow
 MLflow will start automatically with app.py. you can go to "http://localhost:8082/" and track the experiment called **Stock Prediction LSTM**. 
 few queries to test in shell. 
@@ -169,6 +177,8 @@ few queries to test in shell.
     curl -X GET "http://localhost:8000/users/" -H "Authorization: Bearer <your_access_token>" # get the list of users
 
 ```
+
+
 
 
 
