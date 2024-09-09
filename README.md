@@ -31,47 +31,46 @@ In this project, we developed a MLOps solution to deploy, monitor and update a s
 
 ## Project Organization
 
+    ├── docker-compose.yml    <- Docker Compose configuration.
     ├── LICENSE
-    ├── README.md          <- The top-level README for developers using this project.
-    ├── data
-    │   ├── external       <- Data from third party sources.
-    │   ├── interim        <- Intermediate data that has been transformed.
-    │   ├── processed      <- The final, canonical data sets for modeling.
-    │   └── raw            <- The original, immutable data dump.
+    ├── README.md             <- The top-level README for developers using this project.
+    ├── requirements.txt      <- Dependency requirements file.
     │
-    ├── logs               <- Logs from training and predicting
+    ├── airflow               <- Airflow for scheduling model training.   
     │
-    ├── models             <- Trained and serialized models, model predictions, or model summaries
+    ├── app                   <- FastAPI application files.
     │
-    ├── notebooks          <- Jupyter notebooks. Naming convention is a number (for ordering),
-    │                         the creator's initials, and a short `-` delimited description, e.g.
-    │                         `1.0-jqp-initial-data-exploration`.
+    ├── logs                  <- Logs from training and predicting
     │
-    ├── references         <- Data dictionaries, manuals, and all other explanatory materials.
+    ├── models                <- Trained and serialized models, model predictions, or model summaries
     │
-    ├── reports            <- Generated analysis as HTML, PDF, LaTeX, etc.
-    │   └── figures        <- Generated graphics and figures to be used in reporting
+    ├── notebooks             <- Jupyter notebooks. Naming convention is a number (for ordering),
+    │                            the creator's initials, and a short `-` delimited description, e.g.
+    │                            `1.0-jqp-initial-data-exploration`.
     │
-    ├── requirements.txt   <- The requirements file for reproducing the analysis environment, e.g.
-    │                         generated with `pip freeze > requirements.txt`
+    ├── references            <- Logos
     │
-    ├── src                <- Source code for use in this project.
-    │   ├── __init__.py    <- Makes src a Python module
+    ├── reports               <- Generated analyses, figures, etc.
+    │
+
+    to be done: scr folder
+    ├── src                   <- Source code for use in this project.
+    │   ├── __init__.py       <- Makes src a Python module
     │   │
-    │   ├── data           <- Scripts to download or generate data
+    │   ├── data              <- Scripts to download or generate data
     │   │   └── make_dataset.py
     │   │
-    │   ├── features       <- Scripts to turn raw data into features for modeling
+    │   ├── features          <- Scripts to turn raw data into features for modeling
     │   │   └── build_features.py
     │   │
-    │   ├── models         <- Scripts to train models and then use trained models to make
-    │   │   │                 predictions
+    │   ├── models            <- Scripts to train models and then use trained models to make
+    │   │   │                    predictions
     │   │   ├── predict_model.py
     │   │   └── train_model.py
     │   │
-    │   ├── visualization  <- Scripts to create exploratory and results oriented visualizations
+    │   ├── visualization     <- Scripts to create exploratory and results oriented visualizations
     │   │   └── visualize.py
-    │   └── config         <- Describe the parameters used in train_model.py and predict_model.py
+    │   └── config            <- Describe the parameters used in train_model.py and predict_model.py
 
 --------
 
