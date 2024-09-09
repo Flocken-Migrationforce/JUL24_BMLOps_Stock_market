@@ -159,8 +159,13 @@ Note that the airflow creation here is defined in mac os. It could be different 
    airflow scheduler 
 ```
 
+## MLflow
+MLflow will start automatically with app.py. you can go to "http://localhost:8082/" and track the experiment called **Stock Prediction LSTM**. 
+few queries to test in shell. 
 
-
+ ```shell
+   curl -X POST "http://localhost:8000/train/AAPL" -H "Content-Type: application/json" 
+```
 
 
 
