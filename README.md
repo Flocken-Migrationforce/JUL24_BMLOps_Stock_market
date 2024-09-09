@@ -209,7 +209,55 @@ few queries to test in shell.
 
 
    ```
-    
+
+
+## Grafana 
+- you can use UI in port **:3000**
+- In the left sidebar, click on Configuration (gear icon) and then Data Sources.
+      - Select Prometheus from the list of data sources.
+      - In the URL field, enter: http://localhost:9090
+- Create a Dashboard in Grafana
+    - You will see a graph or time series based on the query.
+    - Adjust the visualization type (graph, gauge, table, etc.) using the options in the right sidebar.
+    - Click Apply to add this panel to your dashboard.
+    - you can use few queries from here to test:
+ 
+```
+fastapi_requests_total{instance="localhost:8000"}
+# Total number of HTTP requests made to your FastAPI application running on localhost:8000.
+
+fastapi_requests_total{handler="/train/{stocksymbol}", method="POST", instance="localhost:8000"}
+# Total number of POST requests made to the '/train/{stocksymbol}' endpoint in your FastAPI app running on localhost:8000.
+
+rate(fastapi_requests_total[5m])
+# The rate of HTTP requests to all FastAPI endpoints over the last 5 minutes.
+
+rate(fastapi_requests_total{handler="/predict/{stocksymbol}"}[5m])
+# The rate of POST requests made to the '/predict/{stocksymbol}' endpoint over the last 5 minutes.
+
+rate(fastapi_request_duration_seconds_sum[5m]) / rate(fastapi_request_duration_seconds_count[5m])
+# Average duration (latency) of HTTP requests to your FastAPI application over the last 5 minutes.
+
+fastapi_request_duration_seconds_sum{handler="/train/{stocksymbol}", instance="localhost:8000"} / 
+fastapi_request_duration_seconds_count{handler="/train/{stocksymbol}", instance="localhost:8000"}
+# Average duration (latency) of POST requests to the '/train/{stocksymbol}' endpoint.
+
+process_resident_memory_bytes{job="fastapi", instance="localhost:8000"}
+# Amount of resident memory used by the FastAPI application running on localhost:8000.
+
+node_memory_MemAvailable_bytes{instance="localhost:9100"}
+# Total available memory in bytes on the system where Node Exporter is running (e.g., localhost:9100).
+
+node_filesystem_free_bytes{mountpoint="/", instance="localhost:9100"}
+# Free disk space in bytes available on the root (/) mountpoint of the system monitored by Node Exporter.
+
+rate(node_network_receive_bytes_total[5m])
+# Rate of network traffic (bytes received) over the last 5 minutes on all network interfaces.
+
+up{instance="localhost:9090"}
+# Whether the Prometheus instance running on localhost:9090
+
+```
 
 
 
