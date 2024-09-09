@@ -1,14 +1,3 @@
-## 🧑🏻‍💻 Development Team
-
-by:
-
-- Fabian Flocken **Flocken-Migrationforce** ([@Flocken-Migrationforce](https://github.com/Flocken-Migrationforce))
-- Leonhard Löffler **LeoLoeff** ([@LeoLoeff](https://github.com/LeoLoeff))
-- Mir Mehdi Seyedebrahimi **mirmehdi**([@mirmehdi](https://github.com/mirmehdi))
-
-
-Final project for 'DataScientest Machine Learning Engineer Program`
-
 # 📈💲Stock Market Prediction
 
 ## 🧺 Introduction and Target
@@ -23,7 +12,7 @@ We are Machine Learning Engineers :
 <a href="https://github.com/LeoLoeff"><img src="https://github.com/LeoLoeff.png" width="50px" alt="Leonhard Löffler" style="border-radius:50%"></a>
 
 [Fabian Flocken](https://www.linkedin.com/in/fabian-flocken-0638a9315)<br>
-[Mir Mehdi Seyedebrahimi](https://www.linkedin.com/in/mirmehdi)<br>
+[Mir Mehdi Seyedebrahimi](https://www.linkedin.com/in/mirmehdiseyedebrahimi/)<br>
 [Leonhard Löffler](https://www.linkedin.com/in/leonhard-loeffler/)<br>
 
 In this project, we developed a MLOps solution to deploy, monitor and update a self-built LSTM model, using Neural Networks to predict stock market prices of famous Tech companies.
