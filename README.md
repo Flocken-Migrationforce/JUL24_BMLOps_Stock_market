@@ -164,7 +164,10 @@ MLflow will start automatically with app.py. you can go to "http://localhost:808
 few queries to test in shell. 
 
  ```shell
-   curl -X POST "http://localhost:8000/train/AAPL" -H "Content-Type: application/json" 
+   curl -X POST "http://localhost:8000/train/AAPL" -H "Content-Type: application/json" -d '{"symbol": "AAPL"}' # track Endpoint: /train/{stocksymbol} , AAPL in this case
+
+    curl -X GET "http://localhost:8000/users/" -H "Authorization: Bearer <your_access_token>" # get the list of users
+
 ```
 
 
