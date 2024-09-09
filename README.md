@@ -103,3 +103,33 @@ This project aims to develop an AI/ML model to predict stock market prices and t
 ```shell
 [git clone https://github.com/omarchoa/dec23_mlops_accidents.git](https://github.com/Flocken-Migrationforce/JUL24_BMLOps_Stock_market.git)
 ```
+
+#### 2. Set up a Python virtual environment
+
+Using Python's `venv` module, with `sword` as the virtual environment name, run the following commands:
+
+```shell
+python -m venv sword
+chmod +x ./sword/bin/activate
+source ./sword/bin/activate
+```
+#### 3. Install the app's global dependencies
+
+From the directory into which you cloned the GitHub repository, go to src direction and  run the following command:
+
+```shell
+cd .../Path to src/
+pip install -r requirements.txt
+```
+
+
+## ⚙️ **Use the app**
+In ./src folder and run the app.py (fast api). The applicatoin will automatoically start the app in port 8000. 
+
+```shell
+cd .../Path to src/
+python app.py
+
+curl http://localhost:8000/docs
+```
+Visit http://localhost:8000/docs to easily create a new user, set a password, and choose between premium or basic subscription plans. You can also update user information at any time. Please ensure you log in with the correct credentials and provide a valid stock symbol (e.g., AAPL) when using the training feature. Note that only premium subscribers have access to stock market predictions."
