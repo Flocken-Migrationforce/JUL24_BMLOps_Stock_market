@@ -5,14 +5,16 @@
 In this MLOps project, we are currently developing AI/ML models to predict the evolution of shares of Apple (AAPL) and Google (GOOGL) at the stock market.
 An API will be created and deployed, to allow access to and interaction with interested parties with an affinity for finance. Daily updates ensure the data to be up-to-date.
 
-Contributors to this project :
-Mir Mehdi Seyedebrahimi https://github.com/mirmehdi
-Fabian Flocken https://github.com/Flocken-Migrationforce
-Leonhard Löffler https://github.com/LeoLoeff
-Florian Wehner
+Contributors to this project :<br>
+<a href="https://github.com/Flocken-Migrationforce"><img src="https://github.com/Flocken-Migrationforce.png" width="50px" alt="Fabian Flocken" style="border-radius:50%"></a>
+<a href="https://github.com/mirmehdi"><img src="https://github.com/mirmehdi.png" width="50px" alt="Mir Mehdi Seyedebrahimi" style="border-radius:50%"></a>
+<a href="https://github.com/LeoLoeff"><img src="https://github.com/LeoLoeff.png" width="50px" alt="Leonhard Löffler" style="border-radius:50%"></a>
 
+[Fabian Flocken](https://www.linkedin.com/in/fabian-flocken-0638a9315)<br>
+[Mir Mehdi Seyedebrahimi](https://www.linkedin.com/in/mirmehdi)<br>
+[Leonhard Löffler](https://www.linkedin.com/in/leonhard-loeffler/)<br>
 
-This project aims to develop an AI/ML model to predict stock market prices and trends.
+In this project, we developed a MLOps solution to deploy, monitor and update a self-built LSTM model, using Neural Networks to predict stock market prices of famous Tech companies.
 
 ## Table of Contents
 1. [Project Overview](reports/project_overview.md)
@@ -155,3 +157,14 @@ Note that the airflow creation here is defined in mac os. It could be different 
 ```shell
    airflow scheduler 
 ```
+
+
+
+
+
+
+
+### Disclaimer:
+Work was done and completed between 24.07.2024 and 10.09.2024. <br>
+This project is the practical part of the [AI / Machine Learning Engineer training](https://datascientest.com/en/machine-learning-engineer-course) from [DataScientest](https://datascientest.com/), cohort of July 2024 Data Scientist Bootcamp.
+<br>All rights reserved by the authors. © 2024  <br>
