@@ -1,3 +1,6 @@
+import os
+os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
+
 from fastapi import FastAPI, HTTPException, Request, Depends
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
@@ -10,6 +13,7 @@ from typing import Literal
 import mlflow
 from mlflow import log_metric, log_param, log_artifact
 from tensorflow.keras.models import load_model
+os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 
 from auth import authenticate_user, create_access_token, get_current_user
 from data.pull import preprocess_data, prepare_datasets
@@ -28,6 +32,8 @@ script_dir = os.path.dirname(os.path.abspath(__file__))
 os.chdir(script_dir)
 ##
 
+
+
 # List of supported symbols
 SUPPORTED_SYMBOLS = ["AAPL", "GOOGL", "GTLE", "META", "MSFT"]
 
@@ -37,12 +43,7 @@ from prometheus_fastapi_instrumentator import Instrumentator # for premetheus
 
 app = FastAPI()
 DATA_MODEL_URL = "localhost:8000"
-# MLflow: Set the MLflow tracking URI and experiment name
-MLFLOW_TRACKING_URI = "http://localhost:8082"
-mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
-mlflow.set_experiment("Stock Prediction LSTM")
-# Path configurations for storing models
-MODEL_DIR = "models"
+#
 
 
 # Instrumentation
@@ -59,6 +60,7 @@ app.mount("/static", StaticFiles(directory="HTML"), name="HTML")
 
 # Set up logging configuration
 import logging
+
 
 ### LOGGING
 # Get the current working directory and define the log directory path
@@ -86,7 +88,10 @@ tf_logger.addFilter(MessageFilter())
 # warnings.filterwarnings('ignore', message='.*oneDNN custom operations are on.*') # ignore specifically the encountered oneDNN enabled warning.
 # warnings.filterwarnings('ignore', message='oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.')
 # warnings.filterwarnings('ignore', message=re.compile(r'oneDNN custom operations are on.*floating-point round-off errors.*TF_ENABLE_ONEDNN_OPTS=0')) # DOESN'T WORK for tensorflow INFO I message. Can't use import warnings to cope with that information pop up.
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
+# os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1' # allows INFO
+# os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' # to suppress INFO
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' # to suppress WARNING
+os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 
 ###
 
@@ -472,115 +477,52 @@ async def visualize_stock(request: Request, symbol: str, days: int = 7):
         raise HTTPException(status_code=500, detail=str(e))
 
 #######################################################################################
-## Functions for Monitoring with Prometheus and Grafana and Alertmanager:
+## Functions for starting FastAPI and Monitoring apps (Prometheus and Grafana) :
 #######################################################################################
-import subprocess
+'''notWORKING2409092119iFF
+mport subprocess
+from time import sleep
 
 
-def run_uvicorn():
-    uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)
+MLFLOW_TRACKING_URI = "http://localhost:8082"
+mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
+mlflow.set_experiment("Stock Prediction LSTM")
 
-def start_prometheus():
-    try:
-        subprocess.Popen(
-            ["prometheus", "--config.file=./monitoring/prometheus.yml"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE
-        )
-        print("Prometheus has started successfully.")
-    except Exception as e:
-        print(f"Failed to start Prometheus: {e}")
+# Path configurations for storing models
+MODEL_DIR = "models"
 
-def start_grafana_port_forward():
-    try:
-        subprocess.Popen(
-            ["kubectl", "port-forward", "service/grafana", "3000:80"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE
-        )
-        print("Started port-forwarding for Grafana on port 3000.")
-    except Exception as e:
-        print(f"Failed to start port-forwarding: {e}")
-
-# def start_prometheus():
-#     # Get the current script's directory
-#     current_dir = os.path.dirname(os.path.abspath(__file__))
-
-#     # Construct the path to prometheus.yml
-#     prometheus_yml_path = os.path.join(current_dir, 'monitoring', 'prometheus.yml')
-
-#     # Ensure the path is absolute
-#     prometheus_yml_path = os.path.abspath(prometheus_yml_path)
-
-#     # Docker command to run Prometheus
-#     docker_command = [
-#         "docker", "run", "-d",  # Run in detached mode
-#         "-p", "9090:9090",
-#         "-v", f"{prometheus_yml_path}:/monitoring/prometheus.yml",
-#         "prom/prometheus"
-#     ]
-
-#     try:
-#         subprocess.run(docker_command, check=True)
-#         print("Prometheus started successfully")
-#     except subprocess.CalledProcessError as e:
-#         print(f"Failed to start Prometheus: {e}")
+def start_mlflow_server():
+    print("Starting MLflow server...")
+    mlflow_process = subprocess.Popen(
+        ["mlflow", "server", "--host", "0.0.0.0", "--port", "8082"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE
+    )
+    sleep(5)  # Wait for MLflow server to start
+    return mlflow_process'''
 
 
-def run_command(command):
-    process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    stdout, stderr = process.communicate()
-    if process.returncode != 0:
-        print(f"Error executing command: {command}")
-        print(stderr.decode())
-    else:
-        print(stdout.decode())
-
-# Your existing start_prometheus() function remains unchanged
-
-def start_grafana():
-    docker_command = [
-        "docker", "run", "-d",
-        "-p", "3000:3000",
-        "grafana/grafana"
-    ]
-    try:
-        subprocess.run(docker_command, check=True)
-        print("Grafana started successfully")
-    except subprocess.CalledProcessError as e:
-        print(f"Failed to start Grafana: {e}")
-
-
-#######################################################################################
-
-
-
-
-##############################################################################################################
-##############################################################################################################
+'''
+# Function to start each FastAPI instance
 if __name__ == "__main__":
-    # Start Uvicorn in a separate thread
-    # uvicorn_thread = threading.Thread(target=run_uvicorn)
-    # uvicorn_thread.start()
+    print("Starting the Stock Prediction App ...")
+    import init
+    # import init
+    import uvicorn
+    uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)
+'''
 
-    # Sleep is not necessary unless there's a specific reason for a delay
-    sleep(5)  # This can be adjusted or removed based on your needs
+if __name__ == "__main__":
+    # mlflow_process = start_mlflow_server()
 
-    # Start monitoring tools
-    start_prometheus()
-    start_grafana_port_forward()
-
-    print("Stock Prediction App started successfully!")
-    print("Access Prometheus at http://localhost:9090")
-    print("Access Grafana at http://localhost:3000")
+    print("Starting the Stock Prediction App ...")
+    import init
 
     uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)
-    # Keep the main thread running
-    # try:
-    #     while True:
-    #         sleep(1)
-    # except KeyboardInterrupt:
-    #     print("Shutting down...")
+
+
+##############################################################################################################
+##############################################################################################################
 #############################################################################################################
 # Shutdown logging
 @app.on_event("shutdown")
