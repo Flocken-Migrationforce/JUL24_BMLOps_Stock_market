@@ -2,8 +2,8 @@
 
 ## 🧺 Introduction and Target
 
-In this MLOps project, we are currently developing AI/ML models to predict the evolution of shares of Apple (AAPL) and Google (GOOGL) at the stock market.
-An API will be created and deployed, to allow access to and interaction with interested parties with an affinity for finance. Daily updates ensure the data to be up-to-date.
+In this MLOps project, we have developed an AI-ML model (LSTM model) to predict the evolution of shares of Apple (AAPL) and Google (GOOGL) at the stock market.
+An API was created and deployed, allowing access and interaction to our stock prediction model for the interested audience with an affinity for finance. Retraining of the model is performed daily at 9 a.m., to ensure accurate predictions.
 
 We are Machine Learning Engineers :
 
@@ -31,7 +31,7 @@ In this project, we developed a MLOps solution to deploy, monitor and update a s
 
 
 --unspecific Template content below--
-
+<LEO>
 Project Organization
 ------------
 
