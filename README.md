@@ -133,3 +133,25 @@ python app.py
 curl http://localhost:8000/docs
 ```
 Visit http://localhost:8000/docs to easily create a new user, set a password, and choose between premium or basic subscription plans. You can also update user information at any time. Please ensure you log in with the correct credentials and provide a valid stock symbol (e.g., AAPL) when using the training feature. Note that only premium subscribers have access to stock market predictions."
+
+## Airflow Schaduling Usage
+Note that the airflow creation here is defined in mac os. It could be different for other os systems. 
+
+1. install apache-airflow
+```shell
+   pip install apache-airflow
+```
+2. initiate database
+ ```shell
+   airflow db init
+```  
+3. before starting go to **airflow.cfg** (you can search for this file using **airflow info** in the shell) and be sure that the path inside **airflow.cfg** is addressing the python file "PATH TO /src/airflow/dagsstock_prediction_dag.py".
+4. then run Apache airflow in port 8081. Note that this terminal will be occupied. 
+```shell
+   airflow webserver -p 8081 
+```
+5. run scheduler in another terminal. Note that this terminal will be occupied. 
+
+```shell
+   airflow scheduler 
+```
