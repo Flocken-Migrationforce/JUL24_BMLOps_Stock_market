@@ -94,3 +94,12 @@ This project aims to develop an AI/ML model to predict stock market prices and t
 8. [Deployment](reports/deployment.md)
 9. [Monitoring and Maintenance](reports/monitoring_and_maintenance.md)
 
+
+## 🎬 Getting Started for Developers
+
+### 🗃️ **Set up the app** 
+#### 1. Clone the app's GitHub repository
+
+```shell
+[git clone https://github.com/omarchoa/dec23_mlops_accidents.git](https://github.com/Flocken-Migrationforce/JUL24_BMLOps_Stock_market.git)
+```
