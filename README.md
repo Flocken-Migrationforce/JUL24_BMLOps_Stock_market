@@ -146,7 +146,13 @@ or you can use the command below in src/airflow/dags/ PATH to test:
 ```
 
 ## MLflow
-MLflow will start automatically with app.py. you can go to "http://localhost:8082/" and track the experiment called **Stock Prediction LSTM**. 
+MLflow has to be started on port 8082, using the following command:
+
+```shell
+   mlflow server --host 0.0.0.0 --port 8082
+```
+
+will start automatically with app.py. you can go to "http://localhost:8082/" and track the experiment called **Stock Prediction LSTM**. 
 few queries to test in shell. 
 
  ```shell
@@ -155,13 +161,18 @@ few queries to test in shell.
     curl -X GET "http://localhost:8000/users/" -H "Authorization: Bearer <your_access_token>" # get the list of users
 
 ```
-
+Now, you can find the tracked information to the training run.
 
 ## Prometheus
-1. Simply open port **:9090** and use prometheus UI
-2. in case it did not run automatically use run (this based in ios, mac):
-   prometheus --config.file=/path/to/prometheus.yml
-4. Here are few queries to be tested in promotheus.
+1. Make sure you have Prometheus installed. Copy the execution files into src/monitoring.
+2. in case it did not run automatically use run (this based in iOS, macOS):
+   cd src/monitoring
+   macOS:
+   prometheus --config.file=prometheus.yml
+   Windows:
+   ./prometheus.exe --config.file=prometheus.yml 
+
+3. Here are few queries to be tested in Prometheus.
    ```Shell
    fastapi_requests_total{instance="localhost:8000"} 
     # Total number of HTTP requests received by your FastAPI app running on localhost:8000.
@@ -190,11 +201,19 @@ few queries to test in shell.
 
 
 ## Grafana 
-- you can use UI in port **:3000**
-- In the left sidebar, click on Configuration (gear icon) and then Data Sources.
+1. Install Grafana on your machine.
+2. You can use a Docker container to start Grafana, or start the grafana.exe file in your installation directory.
+   grafana.
+   bin\grafana-server.exe
+   Or in a Docker container:
+   docker run -d -p 3000:3000 grafana/grafana
+
+4. Open in browser localhost:3000 to interact with the Grafana UI.
+5. In the left sidebar, click on Configuration (gear icon) and then Data Sources.
       - Select Prometheus from the list of data sources.
       - In the URL field, enter: http://localhost:9090
-- Create a Dashboard in Grafana
+         - Or for Prometheus run in a Docker container, enter: http://host.docker.internal:9090
+6. Create a Dashboard in Grafana
     - You will see a graph or time series based on the query.
     - Adjust the visualization type (graph, gauge, table, etc.) using the options in the right sidebar.
     - Click Apply to add this panel to your dashboard.
