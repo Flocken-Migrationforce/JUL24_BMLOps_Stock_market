@@ -15,6 +15,10 @@ from auth import authenticate_user, create_access_token, get_current_user
 from data.pull import preprocess_data, prepare_datasets
 from models.train import create_model, train_model, validate_model
 import threading
+from time import sleep
+import uvicorn
+
+
 
 
 ## Set working directory for this script
@@ -556,8 +560,8 @@ def start_grafana():
 ##############################################################################################################
 if __name__ == "__main__":
     # Start Uvicorn in a separate thread
-    uvicorn_thread = threading.Thread(target=run_uvicorn)
-    uvicorn_thread.start()
+    # uvicorn_thread = threading.Thread(target=run_uvicorn)
+    # uvicorn_thread.start()
 
     # Sleep is not necessary unless there's a specific reason for a delay
     sleep(5)  # This can be adjusted or removed based on your needs
@@ -570,14 +574,14 @@ if __name__ == "__main__":
     print("Access Prometheus at http://localhost:9090")
     print("Access Grafana at http://localhost:3000")
 
-    uvicorn_thread.join() 
-    # # Keep the main thread running
+    uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)
+    # Keep the main thread running
     # try:
     #     while True:
     #         sleep(1)
     # except KeyboardInterrupt:
     #     print("Shutting down...")
-##############################################################################################################
+#############################################################################################################
 # Shutdown logging
 @app.on_event("shutdown")
 def shutdown_event():
