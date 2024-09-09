@@ -185,36 +185,28 @@ few queries to test in shell.
    prometheus --config.file=/path/to/prometheus.yml
 4. Here are few queries to be tested in promotheus.
    ```Shell
-   http_requests_total{handler="/metrics", instance="localhost:8000", job="fastapi", method="GET", status="2xx"} 
-    # Total number of successful GET requests (status code 2xx) made to the '/metrics' endpoint 
-    # from the FastAPI application running on localhost:8000.
+   fastapi_requests_total{instance="localhost:8000"} 
+    # Total number of HTTP requests received by your FastAPI app running on localhost:8000.
     
-    up{instance="localhost:9090", job="prometheus"} 
-    # Whether the Prometheus server running on localhost:9090 is up (1 means up, 0 means down).
+    fastapi_requests_total{handler="/train/{stocksymbol}", method="POST", instance="localhost:8000"} 
+    # Total number of POST requests made to the '/train/{stocksymbol}' endpoint in your FastAPI app on localhost:8000.
     
-    process_cpu_seconds_total{job="fastapi", instance="localhost:8000"} 
-    # Total CPU time used by the FastAPI application running on localhost:8000.
+    fastapi_requests_total{handler="/predict/{stocksymbol}", method="POST", instance="localhost:8000"} 
+    # Total number of POST requests made to the '/predict/{stocksymbol}' endpoint in your FastAPI app on localhost:8000.
     
-    node_memory_MemAvailable_bytes{instance="localhost:9100"} 
-    # The amount of available memory on the machine monitored by Node Exporter running on localhost:9100.
+    fastapi_request_duration_seconds_sum{instance="localhost:8000"} 
+    # The total sum of time spent handling requests by your FastAPI app on localhost:8000.
     
-    rate(http_requests_total[5m]) 
-    # The rate of HTTP requests over the last 5 minutes for all endpoints.
+    fastapi_request_duration_seconds_count{instance="localhost:8000"} 
+    # The count of requests handled by FastAPI, useful when calculating average request duration.
     
-    node_filesystem_free_bytes{mountpoint="/", instance="localhost:9100"} 
-    # The amount of free disk space available on the root mount (/) of the machine monitored by Node Exporter on localhost:9100.
+    rate(fastapi_requests_total{handler="/train/{stocksymbol}"}[5m]) 
+    # Rate of requests to the '/train/{stocksymbol}' endpoint over the last 5 minutes, useful for tracking traffic to a specific endpoint.
     
-    scrape_duration_seconds{job="fastapi", instance="localhost:8000"} 
-    # The duration (in seconds) that Prometheus took to scrape the FastAPI application's metrics on localhost:8000.
-    
-    node_network_receive_bytes_total{device="eth0", instance="localhost:9100"} 
-    # Total number of bytes received over the 'eth0' network interface on the machine monitored by Node Exporter running on localhost:9100.
-    
-    go_gc_duration_seconds{job="prometheus"} 
-    # The duration of garbage collection pauses in the Prometheus server.
-    
-    process_resident_memory_bytes{job="fastapi", instance="localhost:8000"} 
-    # The amount of resident memory used by the FastAPI application running on localhost:8000.
+    fastapi_request_duration_seconds_sum{handler="/train/{stocksymbol}", instance="localhost:8000"} / 
+    fastapi_request_duration_seconds_count{handler="/train/{stocksymbol}", instance="localhost:8000"} 
+    # Average duration (latency) of POST requests to the '/train/{stocksymbol}' endpoint on localhost:8000.
+
 
    ```
     
