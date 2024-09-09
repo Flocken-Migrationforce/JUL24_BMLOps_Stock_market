@@ -1,3 +1,16 @@
+## 🧑🏻‍💻 Development Team
+
+**SHIELD** is developed by:
+
+- Fabian Flocken **Flocken-Migrationforce** ([@Flocken-Migrationforce](https://github.com/Flocken-Migrationforce))
+- Leonhard Löffler **LeoLoeff** ([@LeoLoeff](https://github.com/LeoLoeff))
+- Mir Mehdi Seyedebrahimi **mirmehdi**([@mirmehdi](https://github.com/mirmehdi))
+
+
+**SHIELD** constitutes our final project for the [DataScientest Machine Learning Engineer Program](https://datascientest.com/en/machine-learning-engineer-course).
+
+
+
 # 📈💲Stock Market Prediction
 
 ## 🧺 Introduction and Target
