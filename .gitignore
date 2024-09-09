@@ -126,8 +126,21 @@ requirements.in
 /src/monitoring/prometheus_-0.yml
 /src/monitoring/prometheus_-1.yml
 /src/monitoring/prometheus_-2.yml
-src/kubernetes-deployment_-2.yaml
-src/monitoring/prometheus_-3.yml
-src/monitoring/prometheus_-5.yml
-src/monitoring/prometheus_-4.yml
-src/port-forwarding-K8s-to-localhost.py
+/src/kubernetes-deployment_-2.yaml
+/src/monitoring/prometheus_-3.yml
+/src/monitoring/prometheus_-5.yml
+/src/monitoring/prometheus_-4.yml
+/src/port-forwarding-K8s-to-localhost.py
+/src/helper hash.py
+/src/kubernetes-service.yaml
+#src/readme2.md
+/src/environment.yml
+/src/HTML/index_-0.html
+/src/HTML/styles_-0.css
+/src/HTML/visualization.html
+/src/HTML/prediction.html
+/src/HTML/retrain.html
+/src/HTML/infrastructure.html
+/src/HTML/stock-visualization.html
+/src/HTML/team.html
+/src/HTML/model.html
