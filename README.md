@@ -182,29 +182,9 @@ Now, you can find the tracked information to the training run.
    ```
 4. Here are few queries to be tested in Prometheus.
    ```Shell
-   fastapi_requests_total{instance="localhost:8000"} 
-    # Total number of HTTP requests received by your FastAPI app running on localhost:8000.
-    
-    fastapi_requests_total{handler="/train/{stocksymbol}", method="POST", instance="localhost:8000"} 
-    # Total number of POST requests made to the '/train/{stocksymbol}' endpoint in your FastAPI app on localhost:8000.
-    
-    fastapi_requests_total{handler="/predict/{stocksymbol}", method="POST", instance="localhost:8000"} 
-    # Total number of POST requests made to the '/predict/{stocksymbol}' endpoint in your FastAPI app on localhost:8000.
-    
-    fastapi_request_duration_seconds_sum{instance="localhost:8000"} 
-    # The total sum of time spent handling requests by your FastAPI app on localhost:8000.
-    
-    fastapi_request_duration_seconds_count{instance="localhost:8000"} 
-    # The count of requests handled by FastAPI, useful when calculating average request duration.
-    
-    rate(fastapi_requests_total{handler="/train/{stocksymbol}"}[5m]) 
-    # Rate of requests to the '/train/{stocksymbol}' endpoint over the last 5 minutes, useful for tracking traffic to a specific endpoint.
-    
-    fastapi_request_duration_seconds_sum{handler="/train/{stocksymbol}", instance="localhost:8000"} / 
-    fastapi_request_duration_seconds_count{handler="/train/{stocksymbol}", instance="localhost:8000"} 
-    # Average duration (latency) of POST requests to the '/train/{stocksymbol}' endpoint on localhost:8000.
-
-
+   up{job="fastapi"} # List All Available Metrics # This will return a basic status check to ensure Prometheus is scraping from your FastAPI instance.
+   http_requests_total # count of total HTTP requests handled by your FastAPI app
+   http_requests_total{handler="/train", method="POST"} # 
    ```
 
 
@@ -231,42 +211,19 @@ Now, you can find the tracked information to the training run.
     - Click Apply to add this panel to your dashboard.
     - you can use few queries from here to test:
  
-```
-fastapi_requests_total{instance="localhost:8000"}
-# Total number of HTTP requests made to your FastAPI application running on localhost:8000.
+| **Metric**                              | **Prometheus Query**                                                                                             | **Explanation**                                                                                                      |
+|------------------------------------------|-------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------|
+| **Total Requests per Endpoint**          | `sum by (handler) (http_requests_total)`                                                                          | Shows the total number of HTTP requests to each endpoint. Useful to track traffic across different endpoints.         |
+| **Total POST Requests to Training**      | `sum(http_requests_total{handler="/train/{stocksymbol}", method="POST"})`                                          | Counts the total number of POST requests to the `/train/{stocksymbol}` endpoint. Useful for tracking training activity.|
+| **Total GET Requests to Metrics**        | `sum(http_requests_total{handler="/metrics", method="GET"})`                                                       | Counts the total number of GET requests to the `/metrics` endpoint. Useful to track how often Prometheus scrapes metrics.|
+| **Total User Registration Requests**     | `sum(http_requests_total{handler="/users/register", method="POST"})`                                               | Counts the total number of user registration requests to the `/users/register` endpoint.                             |
+| **Request Duration per Endpoint**        | `sum by (handler) (http_request_duration_seconds_sum) / sum by (handler) (http_request_duration_seconds_count)`     | Calculates the average duration for handling requests per endpoint. This is useful for identifying slow endpoints.    |
+| **Total Number of Garbage Collections**  | `sum(python_gc_collections_total)`                                                                                 | Tracks the total number of times garbage collection was triggered in the application. Useful for memory management.   |
+| **Garbage Collections per Generation**   | `sum by (generation) (python_gc_collections_total)`                                                                | Shows garbage collection events by generation. Helps identify memory usage patterns and potential memory leaks.       |
+| **Objects Collected During GC**          | `sum by (generation) (python_gc_objects_collected_total)`                                                          | Shows how many objects were collected during garbage collection, broken down by generation.                           |
+| **Uncollectable Objects in GC**          | `sum(python_gc_objects_uncollectable_total)`                                                                       | Tracks uncollectable objects during garbage collection. High values could indicate memory leaks.                      |
+| **Total Response Size per Endpoint**     | `sum by (handler) (http_response_size_bytes_sum)`                                                                  | Monitors the total size of responses sent by each endpoint. Useful to understand bandwidth usage and performance.     |
 
-fastapi_requests_total{handler="/train/{stocksymbol}", method="POST", instance="localhost:8000"}
-# Total number of POST requests made to the '/train/{stocksymbol}' endpoint in your FastAPI app running on localhost:8000.
-
-rate(fastapi_requests_total[5m])
-# The rate of HTTP requests to all FastAPI endpoints over the last 5 minutes.
-
-rate(fastapi_requests_total{handler="/predict/{stocksymbol}"}[5m])
-# The rate of POST requests made to the '/predict/{stocksymbol}' endpoint over the last 5 minutes.
-
-rate(fastapi_request_duration_seconds_sum[5m]) / rate(fastapi_request_duration_seconds_count[5m])
-# Average duration (latency) of HTTP requests to your FastAPI application over the last 5 minutes.
-
-fastapi_request_duration_seconds_sum{handler="/train/{stocksymbol}", instance="localhost:8000"} / 
-fastapi_request_duration_seconds_count{handler="/train/{stocksymbol}", instance="localhost:8000"}
-# Average duration (latency) of POST requests to the '/train/{stocksymbol}' endpoint.
-
-process_resident_memory_bytes{job="fastapi", instance="localhost:8000"}
-# Amount of resident memory used by the FastAPI application running on localhost:8000.
-
-node_memory_MemAvailable_bytes{instance="localhost:9100"}
-# Total available memory in bytes on the system where Node Exporter is running (e.g., localhost:9100).
-
-node_filesystem_free_bytes{mountpoint="/", instance="localhost:9100"}
-# Free disk space in bytes available on the root (/) mountpoint of the system monitored by Node Exporter.
-
-rate(node_network_receive_bytes_total[5m])
-# Rate of network traffic (bytes received) over the last 5 minutes on all network interfaces.
-
-up{instance="localhost:9090"}
-# Whether the Prometheus instance running on localhost:9090
-
-```
 
 
 
