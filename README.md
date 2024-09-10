@@ -52,25 +52,29 @@ In this project, we developed a MLOps solution to deploy, monitor and update a s
     │
     ├── reports               <- Generated analyses, figures, etc.
     │
-
-    to be done: scr folder
     ├── src                   <- Source code for use in this project.
-    │   ├── __init__.py       <- Makes src a Python module
     │   │
-    │   ├── data              <- Scripts to download or generate data
-    │   │   └── make_dataset.py
+    │   ├── app.py            <- Main file to be executed.
     │   │
-    │   ├── features          <- Scripts to turn raw data into features for modeling
-    │   │   └── build_features.py
+    │   ├── auth.py           <- File containing the password manager.
     │   │
-    │   ├── models            <- Scripts to train models and then use trained models to make
-    │   │   │                    predictions
-    │   │   ├── predict_model.py
-    │   │   └── train_model.py
+    │   ├── data              <- Scripts to download or generate data, preprocessed data.
     │   │
-    │   ├── visualization     <- Scripts to create exploratory and results oriented visualizations
-    │   │   └── visualize.py
+    │   ├── models            <- Scripts to train models and use trained models to make predictions.
+    │   │   ├── predict_model.py
+    │   │   └── train_model.py
+    │   │
+    │   ├── monitoring        <- Prometheus and alertmanager files.
+    │   │
+    │   ├── visualization     <- Scripts to create exploratory and results-oriented visualizations.
+    │   │   └── visualize.py
+    │   │
+    │   ├── config            <- Describe the parameters used in train_model.py and predict_model.py.
+    │   │
+    │   ├── tests             <- Pytest files for unit and integration testing.
+    │   │
     │   └── config            <- Describe the parameters used in train_model.py and predict_model.py
+
 
 --------
 
@@ -167,12 +171,16 @@ Now, you can find the tracked information to the training run.
 1. Make sure you have Prometheus installed. Copy the execution files into src/monitoring.
 2. in case it did not run automatically use run (this based in iOS, macOS):
    cd src/monitoring
+   
    macOS:
+   ```shell
    prometheus --config.file=prometheus.yml
+   ```
    Windows:
+   ```shell
    ./prometheus.exe --config.file=prometheus.yml 
-
-3. Here are few queries to be tested in Prometheus.
+   ```
+4. Here are few queries to be tested in Prometheus.
    ```Shell
    fastapi_requests_total{instance="localhost:8000"} 
     # Total number of HTTP requests received by your FastAPI app running on localhost:8000.
@@ -204,9 +212,13 @@ Now, you can find the tracked information to the training run.
 1. Install Grafana on your machine.
 2. You can use a Docker container to start Grafana, or start the grafana.exe file in your installation directory.
    grafana.
+   ```shell
    bin\grafana-server.exe
+   ```
    Or in a Docker container:
+   ```shell
    docker run -d -p 3000:3000 grafana/grafana
+   ```
 
 4. Open in browser localhost:3000 to interact with the Grafana UI.
 5. In the left sidebar, click on Configuration (gear icon) and then Data Sources.
