@@ -29,6 +29,9 @@ In this project, we developed a MLOps solution to deploy, monitor and update a s
 7. [Grafana](#grafana)
 8. [Disclaimer](#disclaimer)
 
+## Architecture
+
+![Architecture](https://raw.githubusercontent.com/Flocken-Migrationforce/JUL24_BMLOps_Stock_market/master/reports/figures/ML%20platform%20architecture_schema.png)
 ## Project Organization
 
     ├── docker-compose.yml    <- Docker Compose configuration.
@@ -78,7 +81,6 @@ In this project, we developed a MLOps solution to deploy, monitor and update a s
 
 --------
 
-<p><small>Project based on the <a target="_blank" href="https://drivendata.github.io/cookiecutter-data-science/">cookiecutter data science project template</a>. #cookiecutterdatascience</small></p>
 
 ## 🎬 Getting Started for Developers
 
@@ -86,7 +88,7 @@ In this project, we developed a MLOps solution to deploy, monitor and update a s
 #### 1. Clone the app's GitHub repository
 
 ```shell
-[git clone https://github.com/omarchoa/dec23_mlops_accidents.git](https://github.com/Flocken-Migrationforce/JUL24_BMLOps_Stock_market.git)
+git clone https://github.com/Flocken-Migrationforce/JUL24_BMLOps_Stock_market.git
 ```
 
 #### 2. Set up a Python virtual environment
@@ -119,9 +121,8 @@ curl http://localhost:8000/docs
 ```
 Visit http://localhost:8000/docs to easily create a new user, set a password, and choose between premium or basic subscription plans. You can also update user information at any time. Please ensure you log in with the correct credentials and provide a valid stock symbol (e.g., AAPL) when using the training feature. Note that only premium subscribers have access to stock market predictions."
 
-## Airflow Scheduling Usage
-Note that the airflow creation here is defined in mac os. It could be different for other os systems. 
-
+## Airflow Scheduling
+#### macOS :
 1. install apache-airflow
 ```shell
    pip install apache-airflow
@@ -140,8 +141,18 @@ Note that the airflow creation here is defined in mac os. It could be different 
 ```shell
    airflow scheduler 
 ```
+#### Windows :
+For Windows, you could use Docker Desktop with this [docker-compose.yml](https://airflow.apache.org/docs/apache-airflow/2.5.1/docker-compose.yaml) file and a file named ".env" with content
+```Text
+AIRFLOW_IMAGE_NAME=apache/airflow:2.4.2
+AIRFLWO_UID=50000
+```
+Then, store these 2 files in the airflow directory of the project. Start Airflow by starting a Docker container containing the Airflow instance with terminal command
+```Shell
+docker-compose up -d
+```
 
-### Test: 
+### Test : 
 then you can go to UI in poer **:8081** and search for ID **train_aapl_model_daily**. You can start the scheduled training everyday at 9:00 AM. Note that airflow should be run in background all the time. 
 or you can use the command below in src/airflow/dags/ PATH to test: 
 
