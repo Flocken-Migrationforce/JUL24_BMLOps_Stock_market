@@ -10,6 +10,7 @@ import logging
 from starlette.responses import JSONResponse
 from pydantic import BaseModel
 from typing import Literal
+import numpy as np
 import mlflow
 from mlflow import log_metric, log_param, log_artifact
 from tensorflow.keras.models import load_model
@@ -149,9 +150,40 @@ async def train_model_endpoint(stock_request: StockRequest):
 
             scaled_data, scaler, _ = preprocess_data(symbol)
             x_train, y_train, x_val, y_val = prepare_datasets(scaled_data)
+            log_param("train_size", len(x_train))
+            log_param("val_size", len(x_val))
             model = create_model()
-            train_model(model, x_train, y_train)
+            log_param(model.get_config())  # This logs the model architecture
+
+            # train_model(model, x_train, y_train)
+            history = train_model(model, x_train, y_train)
+            for epoch, loss in enumerate(history.history['loss']):
+                log_metric("training_loss", loss, step=epoch)
+            for epoch, val_loss in enumerate(history.history['val_loss']):
+                log_metric("validation_loss", val_loss, step=epoch)
+
             rmse, mae, mape, _, _ = validate_model(model, x_val, y_val, scaler)
+
+            # Log prediction examples:
+            sample_predictions = model.predict(x_val[:5])
+            for i, pred in enumerate(sample_predictions):
+                log_metric(f"sample_prediction_{i}", pred[0])
+                log_metric(f"sample_actual_{i}", y_val[i])
+
+            # Storing the actual datasets as artifacts :
+            np.save('x_train.npy', x_train)
+            np.save('y_train.npy', y_train)
+            np.save('x_val.npy', x_val)
+            np.save('y_val.npy', y_val)
+            log_artifact('x_train.npy')
+            log_artifact('y_train.npy')
+            log_artifact('x_val.npy')
+            log_artifact('y_val.npy')
+
+            # Log the scaler :
+            import joblib
+            joblib.dump(scaler, 'scaler.pkl')
+            log_artifact('scaler.pkl')
 
             # MLflow: Log performance metrics
             log_metric("RMSE", rmse)
